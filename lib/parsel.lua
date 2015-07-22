@@ -107,10 +107,9 @@ end
 
 function Parser:apply(s)
     stackAssert(s, "Nil apply string")
-    -- return space:bind(function()
-    --     return self
-    -- end).runParser(s)
-    return self.runParser(s)
+    return space:bind(function()
+        return self
+    end).runParser(s)
 end
 
 function Parser:otherwise(b)
