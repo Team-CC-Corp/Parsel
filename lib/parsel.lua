@@ -77,6 +77,12 @@ function Parser:bind(f)
     end)
 end
 
+function Parser:fmap(f)
+    return self:bind(function(a)
+        return from(f(a))
+    end)
+end
+
 function Parser:apply(s)
     stackAssert(s, "Nil apply string")
     -- return space:bind(function()
