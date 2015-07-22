@@ -105,6 +105,17 @@ function Parser:try()
     end)
 end
 
+function Parser:lookahead()
+    return new(function(s)
+        local ok, a, cs = self.runParser(s)
+        if not ok then
+            return ok, a, cs
+        else
+            return ok, a, s
+        end
+    end)
+end
+
 function Parser:apply(s)
     stackAssert(s, "Nil apply string")
     return space:bind(function()
