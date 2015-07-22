@@ -83,6 +83,28 @@ function Parser:fmap(f)
     end)
 end
 
+function Parser:expect(str)
+    return new(function(s)
+        local ok, a, cs = self.runParser(s)
+        if not ok then
+            return ok, "Expected: " .. str, cs
+        else
+            return ok, a, cs
+        end
+    end)
+end
+
+function Parser:try()
+    return new(function(s)
+        local ok, a, cs = self.runParser(s)
+        if not ok then
+            return ok, a, s
+        else
+            return ok, a, cs
+        end
+    end)
+end
+
 function Parser:apply(s)
     stackAssert(s, "Nil apply string")
     -- return space:bind(function()
@@ -167,6 +189,10 @@ end
 
 -- CONSTRUCTORS
 
+function fail(str)
+    return zero:expect(str)
+end
+
 function from(a)
     return new(function(s) return true, a, s end)
 end
@@ -178,7 +204,7 @@ function satisfy(f)
         else
             return zero
         end
-    end)
+    end):try()
 end
 
 function char(c)
