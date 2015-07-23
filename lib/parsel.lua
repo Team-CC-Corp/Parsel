@@ -87,7 +87,7 @@ function Parser:expect(str)
     return new(function(s)
         local ok, a, cs = self.runParser(s)
         if not ok then
-            return ok, str, cs
+            return ok, {str}, cs
         else
             return ok, a, cs
         end
@@ -131,7 +131,7 @@ function Parser:otherwise(b)
             local firstError = a
             ok, a, cs = b.runParser(s)
             if not ok and cs == s then
-                return ok, firstError .. ", " .. a, cs
+                return ok, concat(firstError, a), cs
             else
                 return ok, a, cs
             end
@@ -258,11 +258,11 @@ end
 
 -- SIMPLE PARSERS
 
-zero = new(function(s) return false, "Error", s end)
+zero = new(function(s) return false, {"Error"}, s end)
 
 item = new(function(s)
     if s == "" then
-        return false, "Unexpected EOF", s
+        return false, {"Unexpected EOF"}, s
     else
         return true, s:sub(1,1), s:sub(2)
     end
