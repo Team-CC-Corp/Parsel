@@ -22,6 +22,14 @@ local function tail(t)
     return tl
 end
 
+local function replicate(n, x)
+    local t = {}
+    for i=1, n do
+        table.insert(t, x)
+    end
+    return t
+end
+
 -- ERROR UTIL
 
 local function stackError(msg, level)
@@ -209,6 +217,10 @@ function Parser:token()
             return from(a)
         end)
     end)
+end
+
+function Parser:count(n)
+    return sequence(replicate(n, self))
 end
 
 -- CONSTRUCTORS
