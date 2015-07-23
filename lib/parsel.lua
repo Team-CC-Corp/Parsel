@@ -93,6 +93,10 @@ function Parser:bind(f)
     end)
 end
 
+function Parser:discardBind(p)
+    return self:bind(function() return p end)
+end
+
 function Parser:fmap(f)
     return self:bind(function(a)
         return from(f(a))
@@ -134,9 +138,7 @@ end
 
 function Parser:apply(s)
     stackAssert(s, "Nil apply string")
-    return space:bind(function()
-        return self
-    end).runParser(s)
+    return space:discardBind(self).runParser(s)
 end
 
 function Parser:otherwise(b)
@@ -175,7 +177,7 @@ end
 
 function Parser:sepBy1(sep)
     return self:bind(function(a)
-        return sep:bind(function() return self end):many():bind(function(as)
+        return sep:discardBind(self):many():bind(function(as)
             return from(concat({a}, as))
         end)
     end)
@@ -213,9 +215,7 @@ end
 
 function Parser:token()
     return self:bind(function(a)
-        return space:bind(function()
-            return from(a)
-        end)
+        return space:discardBind(from(a))
     end)
 end
 
@@ -251,11 +251,7 @@ function string(s)
     if s == "" then
         return from("")
     else
-        return char(s:sub(1,1)):bind(function(c)
-            return string(s:sub(2)):bind(function(cs)
-                return from(s)
-            end)
-        end):try():expect(s)
+        return char(s:sub(1,1)):discardBind(string(s:sub(2)):discardBind(from(s))):try():expect(s)
     end
 end
 
