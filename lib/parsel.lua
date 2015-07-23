@@ -223,6 +223,12 @@ function Parser:count(n)
     return sequence(replicate(n, self))
 end
 
+function Parser:between(start, stop)
+    return start:discardBind(self:bind(function(a)
+        return stop:discardBind(from(a))
+    end))
+end
+
 -- CONSTRUCTORS
 
 function fail(str)

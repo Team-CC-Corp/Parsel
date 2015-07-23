@@ -1,3 +1,12 @@
 local parsel = grin.getPackageAPI("Team-CC-Corp/Parsel", "parsel")
-local ok, val, cs = parsel.char"a":otherwise(parsel.char"b"):otherwise(parsel.string"test"):many1():apply(...)
+local a = parsel.symbol"a"
+local b = parsel.symbol"b"
+local test = parsel.symbol"test"
+local abtest = a:otherwise(b):otherwise(test)
+local p = abtest:many():bind(function(a)
+    return abtest:between(parsel.symbol"{", parsel.symbol"}"):bind(function(a_inner)
+        return parsel.from({outer=a,inner=a_inner})
+    end)
+end)
+local ok, val, cs = p:apply((...))
 print(ok,":",textutils.serialize(val),":",cs)
