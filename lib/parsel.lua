@@ -14,6 +14,14 @@ local function concat(a, b)
     return concatted
 end
 
+local function tail(t)
+    local tl = {}
+    for i=2,#t do
+        tl[i - 1] = t[i]
+    end
+    return tl
+end
+
 -- ERROR UTIL
 
 local function stackError(msg, level)
@@ -254,6 +262,18 @@ function choice(list)
     end
 
     return p
+end
+
+function sequence(list)
+    if #list == 0 then
+        return from({})
+    else
+        return list[1]:bind(function(a)
+            return sequence(tail(list)):bind(function(as)
+                return from(concat({a}, as))
+            end)
+        end)
+    end
 end
 
 -- SIMPLE PARSERS
