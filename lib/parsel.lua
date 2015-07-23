@@ -87,7 +87,7 @@ function Parser:expect(str)
     return new(function(s)
         local ok, a, cs = self.runParser(s)
         if not ok then
-            return ok, "Expected: " .. str, cs
+            return ok, str, cs
         else
             return ok, a, cs
         end
@@ -128,7 +128,13 @@ function Parser:otherwise(b)
         local ok, a, cs = self.runParser(s)
         -- return if ok, or error if input was consumed
         if (not ok) and cs == s then
-            return b.runParser(s)
+            local firstError = a
+            ok, a, cs = b.runParser(s)
+            if not ok and cs == s then
+                return ok, firstError .. ", " .. a, cs
+            else
+                return ok, a, cs
+            end
         else
             return ok, a, cs
         end
@@ -235,6 +241,19 @@ end
 
 function symbol(s)
     return string(s):token()
+end
+
+function choice(list)
+    local p = list[1]
+    if not p then
+        return fail("No choices")
+    end
+
+    for i=2, #list do
+        p = p:otherwise(list[i])
+    end
+
+    return p
 end
 
 -- SIMPLE PARSERS
