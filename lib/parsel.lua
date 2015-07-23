@@ -224,7 +224,7 @@ function satisfy(f)
 end
 
 function char(c)
-    return satisfy(function(c1) return c == c1 end)
+    return satisfy(function(c1) return c == c1 end):expect(c)
 end
 
 function string(s)
@@ -235,7 +235,7 @@ function string(s)
             return string(s:sub(2)):bind(function(cs)
                 return from(s)
             end)
-        end)
+        end):try():expect(s)
     end
 end
 
