@@ -254,14 +254,6 @@ end
 
 -- CHAR
 
-anyChar = new(function(s)
-    if s == "" then
-        return false, {"Unexpected EOF"}, s
-    else
-        return true, s:sub(1,1), s:sub(2)
-    end
-end)
-
 function satisfy(f)
     return anyChar:bind(function(c)
         if f(c) then
@@ -301,6 +293,14 @@ function noneOf(s)
 end
 
 constants(function()
+    anyChar = new(function(s)
+        if s == "" then
+            return false, {"Unexpected EOF"}, s
+        else
+            return true, s:sub(1,1), s:sub(2)
+        end
+    end)
+    
     space = satisfy(function(c) return c:find"%s" ~= nil end)
     spaces = space:many()
 
