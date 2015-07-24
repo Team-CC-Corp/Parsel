@@ -8,5 +8,9 @@ local p = abtest:many():bind(function(a)
         return parsel.from({outer=a,inner=a_inner})
     end)
 end)
-local ok, val, cs = p:apply((...))
-print(ok,":",textutils.serialize(val),":",cs)
+local ok, val = p:parse((...))
+if not ok then
+    printError(val)
+else
+    print(textutils.serialize(val))
+end
