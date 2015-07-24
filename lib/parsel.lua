@@ -245,8 +245,16 @@ end
 
 -- CHAR
 
+anyChar = new(function(s)
+    if s == "" then
+        return false, {"Unexpected EOF"}, s
+    else
+        return true, s:sub(1,1), s:sub(2)
+    end
+end)
+
 function satisfy(f)
-    return item:bind(function(c)
+    return anyChar:bind(function(c)
         if f(c) then
             return from(c)
         else
@@ -335,11 +343,3 @@ end
 -- SIMPLE PARSERS
 
 zero = new(function(s) return false, {"Error"}, s end)
-
-item = new(function(s)
-    if s == "" then
-        return false, {"Unexpected EOF"}, s
-    else
-        return true, s:sub(1,1), s:sub(2)
-    end
-end)
