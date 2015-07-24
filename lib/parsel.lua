@@ -171,6 +171,10 @@ function Parser:many1()
     end)
 end
 
+function Parser:skipMany()
+    return self:many():discardBind(from(nil))
+end
+
 function Parser:sepBy(sep)
     return self:sepBy1(sep):otherwise(from({}))
 end
