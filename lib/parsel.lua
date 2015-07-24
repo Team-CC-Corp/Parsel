@@ -300,6 +300,15 @@ function Parser:notFollowedBy()
     end):otherwise(from(nil))
 end
 
+function Parser:manyTill(ending)
+    local function scan()
+        return ending:discardBind(from({})):otherwise(self:bind(function(a)
+            return scan():fmap(concat({a}))
+        end))
+    end
+    return scan()
+end
+
 -- PRIMITIVE
 
 function Parser:apply(s)
