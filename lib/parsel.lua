@@ -109,36 +109,6 @@ function Parser:lookahead()
     end)
 end
 
-function Parser:chainl(op, x)
-    return self:chainl1(op):otherwise(from(x))
-end
-
-function Parser:chainl1(op)
-    local function rest(a)
-        return op:bind(function(f)
-            return self:bind(function(b)
-                return rest(f(a, b))
-            end)
-        end):otherwise(from(a))
-    end
-    return self:bind(rest)
-end
-
-function Parser:chainr(op, x)
-    return self:chainr1(op):otherwise(from(x))
-end
-
-function Parser:chainr1(op)
-    local function rest(a)
-        return op:bind(function(f)
-            return self:bind(rest):fmap(function(b)
-                return f(a, b)
-            end)
-        end):otherwise(from(a))
-    end
-    return self:bind(rest)
-end
-
 function Parser:token()
     return self:bind(function(a)
         return spaces:discardBind(from(a))
@@ -288,6 +258,36 @@ function Parser:sepEndBy1(sep)
     return self:bind(function(a)
         return sep:discardBind(self:sepEndBy(sep):fmap(concat({a})):otherwise(from({a}))
     end)
+end
+
+function Parser:chainl(op, x)
+    return self:chainl1(op):otherwise(from(x))
+end
+
+function Parser:chainl1(op)
+    local function rest(a)
+        return op:bind(function(f)
+            return self:bind(function(b)
+                return rest(f(a, b))
+            end)
+        end):otherwise(from(a))
+    end
+    return self:bind(rest)
+end
+
+function Parser:chainr(op, x)
+    return self:chainr1(op):otherwise(from(x))
+end
+
+function Parser:chainr1(op)
+    local function rest(a)
+        return op:bind(function(f)
+            return self:bind(rest):fmap(function(b)
+                return f(a, b)
+            end)
+        end):otherwise(from(a))
+    end
+    return self:bind(rest)
 end
 
 -- PRIMITIVE
