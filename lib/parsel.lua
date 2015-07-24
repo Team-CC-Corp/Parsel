@@ -155,16 +155,6 @@ function Parser:token()
     end)
 end
 
-function Parser:count(n)
-    return sequence(replicate(n, self))
-end
-
-function Parser:between(start, stop)
-    return start:discardBind(self:bind(function(a)
-        return stop:discardBind(from(a))
-    end))
-end
-
 -- CHAR
 
 function satisfy(f)
@@ -232,6 +222,31 @@ constants(function()
     hexDigit = satisfy(function(c) return c:find"%x" ~= nil end)
     octalDigit = satisfy(function(c) return c:find"[0-7]" ~= nil end)
 end)
+
+-- COMBINATOR
+
+function choice(list)
+    local p = list[1]
+    if not p then
+        return fail("No choices")
+    end
+
+    for i=2, #list do
+        p = p:otherwise(list[i])
+    end
+
+    return p
+end
+
+function Parser:count(n)
+    return sequence(replicate(n, self))
+end
+
+function Parser:between(start, stop)
+    return start:discardBind(self:bind(function(a)
+        return stop:discardBind(from(a))
+    end))
+end
 
 -- PRIMITIVE
 
@@ -349,19 +364,6 @@ end
 
 function symbol(s)
     return string(s):token()
-end
-
-function choice(list)
-    local p = list[1]
-    if not p then
-        return fail("No choices")
-    end
-
-    for i=2, #list do
-        p = p:otherwise(list[i])
-    end
-
-    return p
 end
 
 function sequence(list)
