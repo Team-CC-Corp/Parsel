@@ -239,7 +239,7 @@ end
 
 function Parser:sepEndBy1(sep)
     return self:bind(function(a)
-        return sep:discardBind(self:sepEndBy(sep):fmap(concat({a})):otherwise(from({a}))
+        return sep:discardBind(self:sepEndBy(sep)):fmap(concat({a})):otherwise(from({a}))
     end)
 end
 
@@ -278,7 +278,7 @@ constants(function()
 end)
 
 function Parser:notFollowedBy()
-    return p:try():bind(function(c)
+    return self:try():bind(function(c)
         return fail(c)
     end):otherwise(from(nil))
 end
