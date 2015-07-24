@@ -98,17 +98,6 @@ function new(f)
     return setmetatable({runParser=f1}, {__index=Parser})
 end
 
-function Parser:lookahead()
-    return new(function(s)
-        local ok, a, cs = self.runParser(s)
-        if not ok then
-            return ok, a, cs
-        else
-            return ok, a, s
-        end
-    end)
-end
-
 function Parser:token()
     return self:bind(function(a)
         return spaces:discardBind(from(a))
@@ -307,6 +296,17 @@ function Parser:manyTill(ending)
         end))
     end
     return scan()
+end
+
+function Parser:lookahead()
+    return new(function(s)
+        local ok, a, cs = self.runParser(s)
+        if not ok then
+            return ok, a, cs
+        else
+            return ok, a, s
+        end
+    end)
 end
 
 -- PRIMITIVE
