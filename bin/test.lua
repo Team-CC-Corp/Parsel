@@ -4,7 +4,7 @@ local b = parsel.symbol"b"
 local test = parsel.symbol"test"
 local abtest = a:otherwise(b):otherwise(test)
 local p = abtest:many():bind(function(a)
-    return abtest:between(parsel.symbol"{", parsel.symbol"}"):bind(function(a_inner)
+    return abtest:sepEndBy1(parsel.symbol","):between(parsel.symbol"{", parsel.symbol"}"):bind(function(a_inner)
         return parsel.from({outer=a,inner=a_inner})
     end)
 end)
