@@ -292,6 +292,9 @@ endOfLine = newLine:otherwise(crlf)
 
 tab = char"\t"
 
+upper = satisfy(function(c) return (c:find"%a" ~= nil) and c == c:upper() end)
+lower = satisfy(function(c) return (c:find"%a" ~= nil) and c == c:lower() end)
+
 -- OTHER
 
 function symbol(s)
