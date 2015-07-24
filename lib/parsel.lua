@@ -98,12 +98,6 @@ function new(f)
     return setmetatable({runParser=f1}, {__index=Parser})
 end
 
-function Parser:token()
-    return self:bind(function(a)
-        return spaces:discardBind(from(a))
-    end)
-end
-
 -- CHAR
 
 function satisfy(f)
@@ -433,6 +427,12 @@ function sequence(list)
             return sequence(tail(list)):fmap(concat({a}))
         end)
     end
+end
+
+function Parser:token()
+    return self:bind(function(a)
+        return spaces:discardBind(from(a))
+    end)
 end
 
 -- INIT CONSTANTS
