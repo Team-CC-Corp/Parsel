@@ -290,6 +290,12 @@ function Parser:chainr1(op)
     return self:bind(rest)
 end
 
+function Parser:notFollowedBy()
+    return p:try():bind(function(c)
+        return fail(c)
+    end):otherwise(from(nil))
+end
+
 -- PRIMITIVE
 
 function Parser:apply(s)
