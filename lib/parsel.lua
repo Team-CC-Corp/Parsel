@@ -295,6 +295,10 @@ tab = char"\t"
 upper = satisfy(function(c) return (c:find"%a" ~= nil) and c == c:upper() end)
 lower = satisfy(function(c) return (c:find"%a" ~= nil) and c == c:lower() end)
 
+alphaNum = satisfy(function(c) return c:find"%w" ~= nil end)
+letter = satisfy(function(c) return c:find"%a" ~= nil end)
+digit = satisfy(function(c) return c:find"%d" ~= nil end)
+
 -- OTHER
 
 function symbol(s)
