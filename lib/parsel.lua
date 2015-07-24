@@ -290,6 +290,10 @@ function Parser:chainr1(op)
     return self:bind(rest)
 end
 
+constants(function()
+    eof = anyChar:notFollowedBy():expect"end of input"
+end)
+
 function Parser:notFollowedBy()
     return p:try():bind(function(c)
         return fail(c)
