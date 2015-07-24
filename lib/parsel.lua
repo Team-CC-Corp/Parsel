@@ -257,7 +257,11 @@ function string(s)
     if s == "" then
         return from("")
     else
-        return char(s:sub(1,1)):discardBind(string(s:sub(2)):discardBind(from(s))):try():expect(s)
+        return char(s:sub(1,1))
+            :discardBind(string(s:sub(2))
+            :discardBind(from(s)))
+            :try()
+            :expect(s)
     end
 end
 
