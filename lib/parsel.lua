@@ -250,6 +250,10 @@ function Parser:optional()
     return self:discardBind(from(nil)):otherwise(from(nil))
 end
 
+function Parser:skipMany1()
+    return self:many1():discardBind(from(nil))
+end
+
 function Parser:many1()
     return self:bind(function(a)
         return self:many():fmap(concat({a}))
