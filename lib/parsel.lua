@@ -109,16 +109,6 @@ function Parser:lookahead()
     end)
 end
 
-function Parser:sepBy(sep)
-    return self:sepBy1(sep):otherwise(from({}))
-end
-
-function Parser:sepBy1(sep)
-    return self:bind(function(a)
-        return sep:discardBind(self):many():fmap(concat({a}))
-    end)
-end
-
 function Parser:chainl(op, x)
     return self:chainl1(op):otherwise(from(x))
 end
@@ -260,6 +250,22 @@ function Parser:optional()
     return self:discardBind(from(nil)):otherwise(from(nil))
 end
 
+function Parser:many1()
+    return self:bind(function(a)
+        return self:many():fmap(concat({a}))
+    end)
+end
+
+function Parser:sepBy(sep)
+    return self:sepBy1(sep):otherwise(from({}))
+end
+
+function Parser:sepBy1(sep)
+    return self:bind(function(a)
+        return sep:discardBind(self):many():fmap(concat({a}))
+    end)
+end
+
 -- PRIMITIVE
 
 function Parser:apply(s)
@@ -360,12 +366,6 @@ end
 
 function Parser:many()
     return self:many1():otherwise(from({}))
-end
-
-function Parser:many1()
-    return self:bind(function(a)
-        return self:many():fmap(concat({a}))
-    end)
 end
 
 function Parser:skipMany()
