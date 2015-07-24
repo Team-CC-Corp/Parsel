@@ -240,6 +240,28 @@ function Parser:apply(s)
     return spaces:discardBind(self).runParser(s)
 end
 
+function Parser:parse(s, sourceName)
+    if type(sourceName) ~= "string" then
+        sourceName = "string"
+    end
+
+    local ok, a, cs = self:apply(s)
+
+    if not ok then
+        local consumedInput = s:sub(1, -(#cs + 1))
+        local _, linesConsumed = consumedInput:gsub("\n", "")
+        local lineNumber = linesConsumed + 1
+
+        local errMsg = "Expected: " .. table.concat(a, ", ")
+            .. "\n  at: " .. sourceName .. ":" .. lineNumber
+            .. " near " .. cs:gsub("%s*(%S+)(.*)", "%1")
+
+        return false, errMsg
+    else
+        return ok, a
+    end
+end
+
 function Parser:bind(f)
     return new(function(s)
         local ok, a, cs = self.runParser(s)
