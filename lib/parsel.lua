@@ -30,6 +30,15 @@ local function replicate(n, x)
     return t
 end
 
+-- CONSTANTS UTIL
+-- Constants can't be declared before the methods they use
+-- But for organizational purposes, this is often necessary
+
+local constantInitializers = {}
+local function constants(f)
+    table.insert(constantInitializers, f)
+end
+
 -- ERROR UTIL
 
 local function stackError(msg, level)
@@ -291,23 +300,25 @@ function noneOf(s)
     end)
 end
 
-space = satisfy(function(c) return c:find"%s" ~= nil end)
-spaces = space:many()
+constants(function()
+    space = satisfy(function(c) return c:find"%s" ~= nil end)
+    spaces = space:many()
 
-newLine = char"\n"
-crlf = string"\r\n"
-endOfLine = newLine:otherwise(crlf)
+    newLine = char"\n"
+    crlf = string"\r\n"
+    endOfLine = newLine:otherwise(crlf)
 
-tab = char"\t"
+    tab = char"\t"
 
-upper = satisfy(function(c) return (c:find"%a" ~= nil) and c == c:upper() end)
-lower = satisfy(function(c) return (c:find"%a" ~= nil) and c == c:lower() end)
+    upper = satisfy(function(c) return (c:find"%a" ~= nil) and c == c:upper() end)
+    lower = satisfy(function(c) return (c:find"%a" ~= nil) and c == c:lower() end)
 
-alphaNum = satisfy(function(c) return c:find"%w" ~= nil end)
-letter = satisfy(function(c) return c:find"%a" ~= nil end)
-digit = satisfy(function(c) return c:find"%d" ~= nil end)
-hexDigit = satisfy(function(c) return c:find"%x" ~= nil end)
-octalDigit = satisfy(function(c) return c:find"[0-7]" ~= nil end)
+    alphaNum = satisfy(function(c) return c:find"%w" ~= nil end)
+    letter = satisfy(function(c) return c:find"%a" ~= nil end)
+    digit = satisfy(function(c) return c:find"%d" ~= nil end)
+    hexDigit = satisfy(function(c) return c:find"%x" ~= nil end)
+    octalDigit = satisfy(function(c) return c:find"[0-7]" ~= nil end)
+end)
 
 -- OTHER
 
@@ -343,3 +354,9 @@ end
 -- SIMPLE PARSERS
 
 zero = new(function(s) return false, {"Error"}, s end)
+
+-- INIT CONSTANTS
+
+for i,f in ipairs(constantInitializers) do
+    f()
+end
