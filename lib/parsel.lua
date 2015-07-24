@@ -181,9 +181,7 @@ end
 
 function Parser:many1()
     return self:bind(function(a)
-        return self:many():bind(function(as)
-            return from(concat({a}, as))
-        end)
+        return self:many():fmap(concat({a}))
     end)
 end
 
@@ -197,9 +195,7 @@ end
 
 function Parser:sepBy1(sep)
     return self:bind(function(a)
-        return sep:discardBind(self):many():bind(function(as)
-            return from(concat({a}, as))
-        end)
+        return sep:discardBind(self):many():fmap(concat({a}))
     end)
 end
 
@@ -225,8 +221,8 @@ end
 function Parser:chainr1(op)
     local function rest(a)
         return op:bind(function(f)
-            return self:bind(rest):bind(function(b)
-                return from(f(a, b))
+            return self:bind(rest):fmap(function(b)
+                return f(a, b)
             end)
         end):otherwise(from(a))
     end
@@ -351,9 +347,7 @@ function sequence(list)
         return from({})
     else
         return list[1]:bind(function(a)
-            return sequence(tail(list)):bind(function(as)
-                return from(concat({a}, as))
-            end)
+            return sequence(tail(list)):fmap(concat({a}))
         end)
     end
 end
