@@ -1,6 +1,13 @@
 -- TABLE UTIL
 
 local function concat(a, b)
+    if not b then
+        -- Allow currying
+        return function(b)
+            return concat(a, b)
+        end
+    end
+
     local concatted = {}
 
     for i,v in ipairs(a) do
