@@ -280,6 +280,16 @@ function Parser:endBy1(sep)
     end):many1()
 end
 
+function Parser:sepEndBy(sep)
+    return self:sepEndBy1(sep):otherwise(from({}))
+end
+
+function Parser:sepEndBy1(sep)
+    return self:bind(function(a)
+        return sep:discardBind(self:sepEndBy(sep):fmap(concat({a})):otherwise(from({a}))
+    end)
+end
+
 -- PRIMITIVE
 
 function Parser:apply(s)
