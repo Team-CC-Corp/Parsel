@@ -416,7 +416,7 @@ end
 -- OTHER
 
 function symbol(s)
-    return string(s):token()
+    return string(s):lexeme()
 end
 
 function sequence(list)
@@ -429,7 +429,7 @@ function sequence(list)
     end
 end
 
-function Parser:token()
+function Parser:lexeme()
     return self:bind(function(a)
         return spaces:discardBind(from(a))
     end)
