@@ -407,6 +407,10 @@ function Parser:otherwise(b)
     end)
 end
 
+constants(function()
+    zero = new(function(s) return false, {"Error"}, s end)
+end)
+
 function Parser:many()
     return self:many1():otherwise(from({}))
 end
@@ -430,10 +434,6 @@ function sequence(list)
         end)
     end
 end
-
--- SIMPLE PARSERS
-
-zero = new(function(s) return false, {"Error"}, s end)
 
 -- INIT CONSTANTS
 
