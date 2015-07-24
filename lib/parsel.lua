@@ -298,6 +298,8 @@ lower = satisfy(function(c) return (c:find"%a" ~= nil) and c == c:lower() end)
 alphaNum = satisfy(function(c) return c:find"%w" ~= nil end)
 letter = satisfy(function(c) return c:find"%a" ~= nil end)
 digit = satisfy(function(c) return c:find"%d" ~= nil end)
+hexDigit = satisfy(function(c) return c:find"%x" ~= nil end)
+octalDigit = satisfy(function(c) return c:find"[0-7]" ~= nil end)
 
 -- OTHER
 
