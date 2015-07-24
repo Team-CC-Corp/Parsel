@@ -138,7 +138,7 @@ end
 
 function Parser:apply(s)
     stackAssert(s, "Nil apply string")
-    return space:discardBind(self).runParser(s)
+    return spaces:discardBind(self).runParser(s)
 end
 
 function Parser:otherwise(b)
@@ -219,7 +219,7 @@ end
 
 function Parser:token()
     return self:bind(function(a)
-        return space:discardBind(from(a))
+        return spaces:discardBind(from(a))
     end)
 end
 
@@ -242,6 +242,8 @@ end
 function from(a)
     return new(function(s) return true, a, s end)
 end
+
+-- CHAR
 
 function satisfy(f)
     return item:bind(function(c)
@@ -268,6 +270,23 @@ function string(s)
             :expect(s)
     end
 end
+
+function oneOf(s)
+    return satisfy(function(c)
+        return s:find(c, 1, true) ~= nil
+    end)
+end
+
+function noneOf(s)
+    return satisfy(function(c)
+        return s:find(c, 1, true) == nil
+    end)
+end
+
+space = satisfy(function(c) return c:find"%s" ~= nil end)
+spaces = space:many()
+
+-- OTHER
 
 function symbol(s)
     return string(s):token()
@@ -309,5 +328,3 @@ item = new(function(s)
         return true, s:sub(1,1), s:sub(2)
     end
 end)
-
-space = satisfy(function(c) return c:find"%s" ~= nil end):many()
