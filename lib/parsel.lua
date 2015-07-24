@@ -286,6 +286,10 @@ end
 space = satisfy(function(c) return c:find"%s" ~= nil end)
 spaces = space:many()
 
+newLine = char"\n"
+crlf = string"\r\n"
+endOfLine = newLine:otherwise(crlf)
+
 -- OTHER
 
 function symbol(s)
