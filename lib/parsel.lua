@@ -290,6 +290,8 @@ newLine = char"\n"
 crlf = string"\r\n"
 endOfLine = newLine:otherwise(crlf)
 
+tab = char"\t"
+
 -- OTHER
 
 function symbol(s)
