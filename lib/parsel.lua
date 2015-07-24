@@ -248,6 +248,18 @@ function Parser:between(start, stop)
     end))
 end
 
+function Parser:option(a)
+    return self:otherwise(from(a))
+end
+
+function Parser:optionMaybe()
+    return self:otherwise(from(nil))
+end
+
+function Parser:optional()
+    return self:discardBind(from(nil)):otherwise(from(nil))
+end
+
 -- PRIMITIVE
 
 function Parser:apply(s)
