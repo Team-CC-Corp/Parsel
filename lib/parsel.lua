@@ -98,49 +98,6 @@ function new(f)
     return setmetatable({runParser=f1}, {__index=Parser})
 end
 
-function Parser:bind(f)
-    return new(function(s)
-        local ok, a, cs = self.runParser(s)
-        if ok then
-            return f(a).runParser(cs)
-        else
-            return ok, a, cs
-        end
-    end)
-end
-
-function Parser:discardBind(p)
-    return self:bind(function() return p end)
-end
-
-function Parser:fmap(f)
-    return self:bind(function(a)
-        return from(f(a))
-    end)
-end
-
-function Parser:expect(str)
-    return new(function(s)
-        local ok, a, cs = self.runParser(s)
-        if not ok then
-            return ok, {str}, cs
-        else
-            return ok, a, cs
-        end
-    end)
-end
-
-function Parser:try()
-    return new(function(s)
-        local ok, a, cs = self.runParser(s)
-        if not ok then
-            return ok, a, s
-        else
-            return ok, a, cs
-        end
-    end)
-end
-
 function Parser:lookahead()
     return new(function(s)
         local ok, a, cs = self.runParser(s)
@@ -150,43 +107,6 @@ function Parser:lookahead()
             return ok, a, s
         end
     end)
-end
-
-function Parser:apply(s)
-    stackAssert(s, "Nil apply string")
-    return spaces:discardBind(self).runParser(s)
-end
-
-function Parser:otherwise(b)
-    return new(function(s)
-        local ok, a, cs = self.runParser(s)
-        -- return if ok, or error if input was consumed
-        if (not ok) and cs == s then
-            local firstError = a
-            ok, a, cs = b.runParser(s)
-            if not ok and cs == s then
-                return ok, concat(firstError, a), cs
-            else
-                return ok, a, cs
-            end
-        else
-            return ok, a, cs
-        end
-    end)
-end
-
-function Parser:many()
-    return self:many1():otherwise(from({}))
-end
-
-function Parser:many1()
-    return self:bind(function(a)
-        return self:many():fmap(concat({a}))
-    end)
-end
-
-function Parser:skipMany()
-    return self:many():discardBind(from(nil))
 end
 
 function Parser:sepBy(sep)
@@ -243,16 +163,6 @@ function Parser:between(start, stop)
     return start:discardBind(self:bind(function(a)
         return stop:discardBind(from(a))
     end))
-end
-
--- CONSTRUCTORS
-
-function fail(str)
-    return zero:expect(str)
-end
-
-function from(a)
-    return new(function(s) return true, a, s end)
 end
 
 -- CHAR
@@ -322,6 +232,96 @@ constants(function()
     hexDigit = satisfy(function(c) return c:find"%x" ~= nil end)
     octalDigit = satisfy(function(c) return c:find"[0-7]" ~= nil end)
 end)
+
+-- PRIMITIVE
+
+function Parser:apply(s)
+    stackAssert(s, "Nil apply string")
+    return spaces:discardBind(self).runParser(s)
+end
+
+function Parser:bind(f)
+    return new(function(s)
+        local ok, a, cs = self.runParser(s)
+        if ok then
+            return f(a).runParser(cs)
+        else
+            return ok, a, cs
+        end
+    end)
+end
+
+function Parser:discardBind(p)
+    return self:bind(function() return p end)
+end
+
+function Parser:fmap(f)
+    return self:bind(function(a)
+        return from(f(a))
+    end)
+end
+
+function fail(str)
+    return zero:expect(str)
+end
+
+function from(a)
+    return new(function(s) return true, a, s end)
+end
+
+function Parser:expect(str)
+    return new(function(s)
+        local ok, a, cs = self.runParser(s)
+        if not ok then
+            return ok, {str}, cs
+        else
+            return ok, a, cs
+        end
+    end)
+end
+
+function Parser:try()
+    return new(function(s)
+        local ok, a, cs = self.runParser(s)
+        if not ok then
+            return ok, a, s
+        else
+            return ok, a, cs
+        end
+    end)
+end
+
+function Parser:otherwise(b)
+    return new(function(s)
+        local ok, a, cs = self.runParser(s)
+        -- return if ok, or error if input was consumed
+        if (not ok) and cs == s then
+            local firstError = a
+            ok, a, cs = b.runParser(s)
+            if not ok and cs == s then
+                return ok, concat(firstError, a), cs
+            else
+                return ok, a, cs
+            end
+        else
+            return ok, a, cs
+        end
+    end)
+end
+
+function Parser:many()
+    return self:many1():otherwise(from({}))
+end
+
+function Parser:many1()
+    return self:bind(function(a)
+        return self:many():fmap(concat({a}))
+    end)
+end
+
+function Parser:skipMany()
+    return self:many():discardBind(from(nil))
+end
 
 -- OTHER
 
