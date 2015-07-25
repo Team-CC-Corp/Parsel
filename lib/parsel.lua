@@ -433,6 +433,136 @@ function Parser:skipMany()
     return self:many():discardBind(from(nil))
 end
 
+-- EXPRESSION
+
+Assoc = {
+    None = "non",
+    Left = "left",
+    Right= "right"
+}
+
+function infixOperator(p, assoc)
+    return {
+        type = "infix",
+        assoc = assoc,
+        parser = p
+    }
+end
+
+function prefixOperator(p)
+    return {
+        type="prefix",
+        parser = p
+    }
+end
+
+function postfixOperator(p)
+    return {
+        type="postfix",
+        parser = p
+    }
+end
+
+function Parser:buildExpressionParser(operators)
+    local function splitOp(op, opTypesList)
+        local rassocOp, lassocOp, nassocOp, prefixOp, postfixOp = unpack(opTypesList)
+
+        if op.type == "infix" then
+            if op.assoc == Assoc.None then
+                nassocOp = concat({op.parser}, nassocOp)
+            elseif op.assoc == Assoc.Left then
+                lassocOp = concat({op.parser}, lassocOp)
+            elseif op.assoc == Assoc.Right then
+                rassocOp = concat({op.parser}, rassocOp)
+            end
+        elseif op.type == "prefix" then
+            prefixOp = concat({op.parser}, prefixOp)
+        elseif op.type == "postfix" then
+            postfixOp = concat({op.parser}, postfixOp)
+        end
+
+        return {rassocOp, lassocOp, nassocOp, prefixOp, postfixOp}
+    end
+
+    local function ambigious(assoc, op)
+        return op:discardBind(fail("ambigious use of a " .. assoc .. " associative operator")):try()
+    end
+
+    local function makeParser(term, ops)
+        local rassoc, lassoc, nassoc, prefix, postfix = unpack(foldr(splitOp, {{}, {}, {}, {}, {}}, ops))
+        local rassocOp = choice(rassoc)
+        local lassocOp = choice(lassoc)
+        local nassocOp = choice(nassoc)
+        local prefixOp = choice(prefix)
+        local postfixOp = choice(postfix)
+
+        local ambigiousRight = ambigious(Assoc.Right, rassocOp)
+        local ambigiousLeft = ambigious(Assoc.Left, lassocOp)
+        local ambigiousNon = ambigious(Assoc.None, nassocOp)
+
+        local postfixP = postfixOp:otherwise(from(id))
+        local prefixP = prefixOp:otherwise(from(id))
+
+        local termP = prefixP:bind(function(pre)
+            return term:bind(function(a)
+                return postfixP:bind(function(post)
+                    return from(post(pre(a)))
+                end)
+            end)
+        end)
+
+        local rassocP, rassocP1
+        function rassocP(x)
+            return rassocOp:bind(function(f)
+                return termP:bind(rassocP1):bind(function(y)
+                    return from(f(x, y))
+                end)
+            end)
+            :otherwise(ambigiousLeft)
+            :otherwise(ambigiousNon)
+        end
+
+        function rassocP1(x)
+            return rassocP(x):otherwise(from(x))
+        end
+
+        local lassocP, lassocP1
+        function lassocP(x)
+            return lassocOp:bind(function(f)
+                return termP:bind(function(y)
+                    return lassocP1(f(x, y))
+                end)
+            end)
+            :otherwise(ambigiousRight)
+            :otherwise(ambigiousNon)
+        end
+
+        function lassocP1(x)
+            return lassocP(x):otherwise(from(x))
+        end
+
+        local function nassocP(x)
+            return nassocOp:bind(function(f)
+                return termP:bind(function(y)
+                    return ambigiousRight
+                        :otherwise(ambigiousLeft)
+                        :otherwise(ambigiousNon)
+                        :otherwise(from(f(x, y)))
+                end)
+            end)
+        end
+
+        return termP:bind(function(x)
+            return rassocP(x)
+                :otherwise(lassocP(x))
+                :otherwise(nassocP(x))
+                :otherwise(from(x))
+                :expect"operator"
+        end)
+    end
+    return foldl(makeParser, self, operators)
+end
+
 -- OTHER
 
 function symbol(s)
