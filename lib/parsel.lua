@@ -37,6 +37,26 @@ local function replicate(n, x)
     return t
 end
 
+local function foldl(f, accum, t)
+    for i,v in ipairs(t) do
+        accum = f(accum, v)
+    end
+    return accum
+end
+
+local function foldr(f, accum, t)
+    for i=#t,1,-1 do
+        accum = f(t[i], accum)
+    end
+    return accum
+end
+
+-- FUNCTION UTIL
+
+local function id(...)
+    return ...
+end
+
 -- CONSTANTS UTIL
 -- Constants can't be declared before the methods they use
 -- But for organizational purposes, this is often necessary
