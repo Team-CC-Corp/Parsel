@@ -569,6 +569,57 @@ function Parser:buildExpressionParser(operators)
     return foldl(makeParser, self, operators)
 end
 
+-- TOKEN
+--[[
+LanguageDef {
+    commentStart   :: String,
+
+    commentEnd     :: String,
+
+    commentLine    :: String,
+
+    nestedComments :: Bool,
+
+    identStart     :: Parser,
+
+    identLetter    :: Parser,
+
+    opStart        :: Parser,
+
+    opLetter       :: Parser,
+
+    reservedNames  :: [String],
+
+    reservedOpNames:: [String],
+
+    caseSensitive  :: Bool
+}
+]]
+
+function makeTokenParser(languageDef)
+    local tokenParser = {}
+
+    ----------------------------------------------------
+    -- Brackets
+    ----------------------------------------------------
+
+    function tokenParser:parens(p)
+        return p:between(self:symbol"(", self:symbol")")
+    end
+
+    function tokenParser:braces(p)
+        return p:between(self:symbol"{", self:symbol"}")
+    end
+
+    function tokenParser:angles(p)
+        return p:between(self:symbol"<", self:symbol">")
+    end
+
+    function tokenParser:brackets(p)
+        return p:between(self:symbol"[", self:symbol"]")
+    end
+end
+
 -- OTHER
 
 function symbol(s)
