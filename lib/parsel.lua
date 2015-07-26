@@ -693,6 +693,8 @@ function makeTokenParser(languageDef)
     end
 
     runConstants()
+
+    return tokenParser
 end
 
 -- OTHER
