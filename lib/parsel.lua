@@ -646,6 +646,52 @@ function makeTokenParser(languageDef)
         tokenParser.colon = tokenParser:symbol":"
     end)
 
+    ----------------------------------------------------
+    -- Chars and strings
+    ----------------------------------------------------
+
+    -- Escape
+    local escMap = {
+        ["a"] = "\a"
+        ["b"] = "\b"
+        ["f"] = "\f"
+        ["n"] = "\n"
+        ["r"] = "\r"
+        ["t"] = "\t"
+        ["v"] = "\v"
+    }
+
+    local escapeCode = anyChar:fmap(function(c)
+        return escMap[c] or c
+    end):expect"escape code"
+
+    -- Chars
+
+    local function charLetter(quote)
+        return satisfy(function(c) return c ~= quote and c ~= "\\" and c:byte() > 26 end)
+    end
+
+    local charEscape = char("\\"):discardBind(escapeCode)
+
+    local function characterChar(quote)
+        return charLetter(quote):otherwise(charEscape):expect"character"
+    end
+
+    function tokenParser:charLiteral(quote)
+        return self:lexeme(characterChar(quote)
+                            :between(char(quote), char(quote):expect"end of character")
+                            :expect"character literal")
+    end
+
+    -- Strings
+
+    function tokenParser:stringLiteral(quote)
+        return self:lexeme(characterChar(quote)
+                            :many()
+                            :between(char(quote), char(quote):expect"end of string")
+                            :expect"string literal")
+    end
+
     runConstants()
 end
 
