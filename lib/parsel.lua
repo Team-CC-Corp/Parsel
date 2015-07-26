@@ -618,6 +618,35 @@ function makeTokenParser(languageDef)
     function tokenParser:brackets(p)
         return p:between(self:symbol"[", self:symbol"]")
     end
+
+    ----------------------------------------------------
+    -- Comma and semi sep
+    ----------------------------------------------------
+
+    function tokenParser:commaSep(p)
+        return p:sepBy(tokenParser.comma)
+    end
+
+    function tokenParser:semiSep(p)
+        return p:sepBy(tokenParser.semi)
+    end
+
+    function tokenParser:commaSep1(p)
+        return p:sepBy1(tokenParser.comma)
+    end
+
+    function tokenParser:semiSep1(p)
+        return p:sepBy1(tokenParser.semi)
+    end
+
+    constants(function()
+        tokenParser.semi = tokenParser:symbol";"
+        tokenParser.comma = tokenParser:symbol","
+        tokenParser.dot = tokenParser:symbol"."
+        tokenParser.colon = tokenParser:symbol":"
+    end)
+
+    runConstants()
 end
 
 -- OTHER
