@@ -66,6 +66,12 @@ local function constants(f)
     table.insert(constantInitializers, f)
 end
 
+local function runConstants()
+    for f in function() return table.remove(constantInitializers) end do
+        f()
+    end
+end
+
 -- ERROR UTIL
 
 local function stackError(msg, level)
@@ -587,6 +593,4 @@ end
 
 -- INIT CONSTANTS
 
-for i,f in ipairs(constantInitializers) do
-    f()
-end
+runConstants()
