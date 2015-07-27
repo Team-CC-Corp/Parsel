@@ -692,6 +692,69 @@ function makeTokenParser(languageDef)
                             :expect"string literal")
     end
 
+    ----------------------------------------------------
+    -- Numbers
+    ----------------------------------------------------
+
+    constants(function()
+        local function number(base, baseDigit)
+            return baseDigit:fmap(function(digits)
+                return foldl(function(x, d) return base * x + tonumber(d, base) end, 0, digits)
+            end)
+        end
+
+        local sign = char"-":discardBind(from(function(x) return -x end))
+                        :otherwise(from(id))
+
+        local decimal = number(10, digit)
+        local hexadecimal = oneOf"xX":discardBind(number(16, hexDigit))
+        local octal = oneOf"oO":discardBind(number(8, octalDigit))
+
+        local exponent = oneOf"eE":discardBind(sign:bind(function(f)
+            return decimal:expect"exponent":fmap(function(e)
+                return 10^f(e)
+            end)
+        end)):expect"exponent"
+
+        local fraction = char".":discardBind(digit:many1():expect"fraction":fmap(function(digits)
+            local function op(d, f)
+                return (f + d) / 10
+            end
+            return foldr(op, 0, digits)
+        end)):expect"fraction"
+
+        local function fractExponent(n)
+            return fraction:bind(function(fract)
+                return exponent:option(1):fmap(function(expo)
+                    return (n + fract) * expo
+                end)
+            end)
+            :otherwise(exponent:fmap(function(expo)
+                return n * expo
+            end))
+        end
+
+        local zeroNumber = char"0":discardBind(
+            hexadecimal
+            :otherwise(octal)
+            :otherwise(decimal)
+            :otherwise(from(0))
+        )
+
+        local floating = decimal:bind(fractExponent)
+        local nat = zeroNumber:otherwise(decimal)
+        local int = tokenParser:lexeme(sign):bind(function(f)
+            return nat:fmap(f)
+        end)
+
+        tokenParser.float = tokenParser:lexeme(floating):expect"floating"
+        tokenParser.integer = tokenParser:lexeme(int):expect"integer"
+        tokenParser.natural = tokenParser:lexeme(nat):expect"natural"
+        tokenParser.decimal = decimal
+        tokenParser.hexadecimal = hexadecimal
+        tokenParser.octal = octal
+    end)
+
     runConstants()
 
     return tokenParser
