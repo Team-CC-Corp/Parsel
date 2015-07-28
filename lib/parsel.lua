@@ -117,9 +117,9 @@ Parser = {}
 
 function new(f)
     local function f1(s)
-        local ok, a, cs = f(stackAssert(s, "Nil string"))
+        local ok, a, cs, unexp = f(stackAssert(s, "Nil string"))
         stackAssert(cs, "Nil suffix")
-        return ok, a, cs
+        return ok, a, cs, unexp
     end
     return setmetatable({runParser=f1}, {__index=Parser})
 end
@@ -167,9 +167,9 @@ end
 constants(function()
     anyChar = new(function(s)
         if s == "" then
-            return false, {"Unexpected EOF"}, s
+            return false, {"EOF"}, s, true
         else
-            return true, s:sub(1,1), s:sub(2)
+            return true, s:sub(1,1), s:sub(2), false
         end
     end)
     
@@ -304,9 +304,11 @@ constants(function()
 end)
 
 function Parser:notFollowedBy()
-    return self:try():bind(function(c)
-        return fail(c)
-    end):otherwise(from(nil))
+    return self:bind(function(c)
+        return unexpected(tostring(c))
+    end)
+    :otherwise(from(nil))
+    :try()
 end
 
 function Parser:manyTill(ending)
@@ -320,11 +322,11 @@ end
 
 function Parser:lookahead()
     return new(function(s)
-        local ok, a, cs = self.runParser(s)
+        local ok, a, cs, unexp = self.runParser(s)
         if not ok then
-            return ok, a, cs
+            return ok, a, cs, unexp
         else
-            return ok, a, s
+            return ok, a, s, unexp
         end
     end)
 end
@@ -360,11 +362,11 @@ end
 
 function Parser:bind(f)
     return new(function(s)
-        local ok, a, cs = self.runParser(s)
+        local ok, a, cs, unexp = self.runParser(s)
         if ok then
             return f(a).runParser(cs)
         else
-            return ok, a, cs
+            return ok, a, cs, unexp
         end
     end)
 end
@@ -383,52 +385,58 @@ function fail(str)
     return zero:expect(str)
 end
 
+function unexpected(str)
+    return new(function(s)
+        return false, {str}, s, true
+    end)
+end
+
 function from(a)
-    return new(function(s) return true, a, s end)
+    return new(function(s) return true, a, s, false end)
 end
 
 function Parser:expect(str)
     return new(function(s)
-        local ok, a, cs = self.runParser(s)
+        local ok, a, cs, unexp = self.runParser(s)
         if not ok then
-            return ok, {str}, cs
+            return ok, {str}, cs, false
         else
-            return ok, a, cs
+            return ok, a, cs, unexp
         end
     end)
 end
 
 function Parser:try()
     return new(function(s)
-        local ok, a, cs = self.runParser(s)
+        local ok, a, cs, unexp = self.runParser(s)
         if not ok then
-            return ok, a, s
+            return ok, a, s, unexp
         else
-            return ok, a, cs
+            return ok, a, cs, unexp
         end
     end)
 end
 
 function Parser:otherwise(b)
     return new(function(s)
-        local ok, a, cs = self.runParser(s)
+        local ok, a, cs, unexp = self.runParser(s)
         -- return if ok, or error if input was consumed
         if (not ok) and cs == s then
             local firstError = a
-            ok, a, cs = b.runParser(s)
+            ok, a, cs, unexp = b.runParser(s)
             if not ok and cs == s then
-                return ok, concat(firstError, a), cs
+                return ok, concat(firstError, a), cs, unexp
             else
-                return ok, a, cs
+                return ok, a, cs, unexp
             end
         else
-            return ok, a, cs
+            return ok, a, cs, unexp
         end
     end)
 end
 
 constants(function()
-    zero = new(function(s) return false, {"Error"}, s end)
+    zero = new(function(s) return false, {"Error"}, s, false end)
 end)
 
 function Parser:many()
