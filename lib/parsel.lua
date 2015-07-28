@@ -51,6 +51,15 @@ local function foldr(f, accum, t)
     return accum
 end
 
+local function contains(t, x)
+    for k,v in pairs(t)
+        if v == x then
+            return true
+        end
+    end
+    return false
+end
+
 -- FUNCTION UTIL
 
 local function id(...)
