@@ -343,14 +343,15 @@ function Parser:parse(s, sourceName)
         sourceName = "string"
     end
 
-    local ok, a, cs = self:apply(s)
+    local ok, a, cs, unexp = self:apply(s)
 
     if not ok then
         local consumedInput = s:sub(1, -(#cs + 1))
         local _, linesConsumed = consumedInput:gsub("\n", "")
         local lineNumber = linesConsumed + 1
 
-        local errMsg = "Expected: " .. table.concat(a, ", ")
+        local errMsg = (unexp and "Unexpected: " or "Expected: ")
+            .. table.concat(a, ", ")
             .. "\n  at: " .. sourceName .. ":" .. lineNumber
             .. " near " .. cs:gsub("%s*(%S+)(.*)", "%1")
 
