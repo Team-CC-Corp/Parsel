@@ -773,6 +773,41 @@ function makeTokenParser(languageDef)
         tokenParser.octal = octal
     end)
 
+    ----------------------------------------------------
+    -- Operator
+    ----------------------------------------------------
+
+    function tokenParser:reservedOp(name)
+        return self:lexeme(
+            string(name)
+            :discardBind(
+                languageDef.opLetter
+                :notFollowedBy()
+                :expect("end of " .. name)
+            )
+            :try()
+        )
+    end
+
+    constants(function()
+        local oper = languageDef.opStart:bind(function(c)
+            return languageDef.opLetter:many():fmap(function(cs)
+                return c .. cs
+            end)
+        end):expect"operator"
+
+        tokenParser.operator = self:lexeme(
+            oper:bind(function(name)
+                if contains(languageDef.reservedOpNames, name) then
+                    return unexpected("reserved operator " .. name)
+                else
+                    return from(name)
+                end
+            end)
+            :try()
+        )
+    end)
+
     runConstants()
 
     return tokenParser
