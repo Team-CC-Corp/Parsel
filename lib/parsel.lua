@@ -869,6 +869,66 @@ function makeTokenParser(languageDef)
         )
     end)
 
+    ----------------------------------------------------
+    -- White space & symbols
+    ----------------------------------------------------
+
+    function tokenParser:symbol(name)
+        return self:lexeme(string(name))
+    end
+
+    function tokenParser:lexeme(p)
+        return p:bind(function(a)
+            return self.whiteSpace:discardBind(from(a))
+        end)
+    end
+
+    do -- do this outside constants() because lots of constants depend on whitespace
+        local oneLineComment = string(languageDef.commentLine)
+                                :try()
+                                :discardBind(anyChar:manyTill(endOfLine:otherwise(eof)))
+                                :discardBind(from(nil))
+
+        local startEnd = languageDef.commentStart .. languageDef.commentEnd
+        local function inCommentMulti()
+            return string(commentEnd):try():discardBind(from(nil))
+                    :otherwise(multiLineComment:try():bind(inCommentMulti))
+                    :otherwise(noneOf(startEnd):skipMany1():bind(inCommentMulti))
+                    :otherwise(oneOf(startEnd):bind(inCommentMulti))
+                    :expect"end of comment"
+        end
+
+        local function inCommentSingle()
+            return string(commentEnd):try():discardBind(from(nil))
+                    :otherwise(noneOf(startEnd):skipMany1():bind(inCommentSingle))
+                    :otherwise(oneOf(startEnd):bind(inCommentSingle))
+                    :expect"end of comment"
+        end
+
+        local inComment
+        if languageDef.nestedComments then
+            inComment = inCommentMulti()
+        else
+            inComment = inCommentSingle()
+        end
+
+        local multiLineComment = string(languageDef.commentStart)
+                                :try()
+                                :discardBind(inComment)
+
+        local whiteSpace = satisfy(function(c) return c:find"%s" ~= nil end):skipMany1()
+
+        if languageDef.commentLine then
+            whiteSpace = whiteSpace:otherwise(oneLineComment)
+        end
+
+        if languageDef.commentStart then
+            whiteSpace = whiteSpace:otherwise(multiLineComment)
+        end
+
+        tokenParser.whiteSpace = whiteSpace
+    end
+
     runConstants()
 
     return tokenParser
