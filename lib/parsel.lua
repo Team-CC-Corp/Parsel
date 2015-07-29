@@ -936,10 +936,6 @@ end
 
 -- OTHER
 
-function symbol(s)
-    return string(s):lexeme()
-end
-
 function sequence(list)
     if #list == 0 then
         return from({})
@@ -948,12 +944,6 @@ function sequence(list)
             return sequence(tail(list)):fmap(concat({a}))
         end)
     end
-end
-
-function Parser:lexeme()
-    return self:bind(function(a)
-        return spaces:discardBind(from(a))
-    end)
 end
 
 -- INIT CONSTANTS
