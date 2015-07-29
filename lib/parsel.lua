@@ -808,6 +808,67 @@ function makeTokenParser(languageDef)
         )
     end)
 
+    ----------------------------------------------------
+    -- Identifiers & Reserved words
+    ----------------------------------------------------
+    local function caseString(name)
+        local function caseChar(c)
+            if c:find("%a") then
+                return char(c:lower()):otherwise(char(c:upper()))
+            else
+                return char(c)
+            end
+        end
+
+        local function walk(s)
+            if s == "" then
+                return from(nil)
+            else
+                local c = s:sub(1,1)
+                return caseChar(c):expect(name):discardBind(walk(s:sub(2)))
+            end
+        end
+
+        if languageDef.caseSensitive then
+            return string(name)
+        else
+            return walk(name):discardBind(from(name))
+        end
+    end
+
+    function tokenParser:reserved(name)
+        return self:lexeme(
+            caseString(name)
+            :discardBind(
+                languageDef.identLetter
+                :notFollowedBy()
+                :expect("end of " .. name)
+            )
+            :try()
+        )
+    end
+
+    constants(function()
+        local ident = languageDef.identStart:bind(function(c)
+            return languageDef.identLetter
+                :many()
+                :fmap(concat({c}))
+                :fmap(table.concat)
+                :expect"identifier"
+        end)
+
+        tokenParser.identifier = tokenParser:lexeme(
+            return ident:bind(function(name)
+                if contains(languageDef.reservedNames, name) then
+                    return unexpected("reserved word " .. name)
+                else
+                    return from(name)
+                end
+            end)
+            :try()
+        )
+    end)
+
     runConstants()
 
     return tokenParser
