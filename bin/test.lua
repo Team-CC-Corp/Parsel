@@ -71,3 +71,4 @@ function var()
         return index:fmap(Var.IndexedPrefix(prefix))
     end))
 end
+local Lua = chunk()
