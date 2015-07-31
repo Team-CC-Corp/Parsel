@@ -52,7 +52,7 @@ local function foldr(f, accum, t)
 end
 
 local function contains(t, x)
-    for k,v in pairs(t)
+    for k,v in pairs(t) do
         if v == x then
             return true
         end
