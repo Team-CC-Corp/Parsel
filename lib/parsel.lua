@@ -66,6 +66,65 @@ local function id(...)
     return ...
 end
 
+-- Algebraic Data Type util
+
+
+--[[
+Use this function to make ADTs.
+For example, take this haskell data
+
+    data Constant = Nil | I(Int) | S(String) | APlusB(A, B)
+
+The same thing using this looks like:
+
+    Constant = {
+        Nil = cons(),
+        I = cons(1),
+        S = cons(1),
+        APlusB = cons(2)
+    }
+
+To use it,
+
+    x = Constant.I(123)
+    x = Constant.APlusB(a)(b) -- IS CURRIED!!
+
+    if x.cons() == Constant.Nil then
+        print("x is nil")
+    elseif x.cons() == Constant.I then
+        print("x is num: ", x.get())
+    elseif x.cons() == Constant.S then
+        print("x is string: ", x.get())
+    elseif x.cons() == Constant.APlusB then
+        local a, b = x.get()
+        print("x is A and B: ", a, " : ", b)
+    end
+]]
+function cons(n)
+    local f
+    local function makeF(n, ...)
+        if n <= 0 then
+            local args = {...}
+            return {
+                cons = function()
+                    return f
+                end,
+                get = function()
+                    return unpack(args)
+                end
+            }
+        else
+            return function(a)
+                local args = {...}
+                table.insert(args, a)
+                return makeF(n - 1, unpack(args))
+            end
+        end
+    end
+    f = makeF(n or 0)
+    return f
+end
+
 -- CONSTANTS UTIL
 -- Constants can't be declared before the methods they use
 -- But for organizational purposes, this is often necessary
