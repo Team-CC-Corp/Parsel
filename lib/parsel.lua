@@ -135,7 +135,7 @@ local function constants(f)
 end
 
 local function runConstants()
-    for f in function() return table.remove(constantInitializers) end do
+    for f in function() return table.remove(constantInitializers, 1) end do
         f()
     end
 end
@@ -729,12 +729,12 @@ function makeTokenParser(languageDef)
 
     -- Escape
     local escMap = {
-        ["a"] = "\a"
-        ["b"] = "\b"
-        ["f"] = "\f"
-        ["n"] = "\n"
-        ["r"] = "\r"
-        ["t"] = "\t"
+        ["a"] = "\a",
+        ["b"] = "\b",
+        ["f"] = "\f",
+        ["n"] = "\n",
+        ["r"] = "\r",
+        ["t"] = "\t",
         ["v"] = "\v"
     }
 
@@ -917,7 +917,7 @@ function makeTokenParser(languageDef)
         end)
 
         tokenParser.identifier = tokenParser:lexeme(
-            return ident:bind(function(name)
+            ident:bind(function(name)
                 if contains(languageDef.reservedNames, name) then
                     return unexpected("reserved word " .. name)
                 else
