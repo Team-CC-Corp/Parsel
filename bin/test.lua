@@ -49,3 +49,11 @@ local chunk,
     funcbody,
     funcname,
     parlist
+
+function chunk()
+    return stat:bind(function(statement)
+        return tokens:symbol";":discardBind(statement)
+    end):many()
+end
+
+block = chunk
