@@ -116,8 +116,7 @@ function cons(n)
         else
             local args = {...}
             return function(a)
-                table.insert(args, a)
-                return makeF(n - 1, unpack(args))
+                return makeF(n - 1, unpack(concat(args, {a})))
             end
         end
     end
