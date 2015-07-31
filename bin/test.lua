@@ -50,6 +50,11 @@ local chunk,
     funcname,
     parlist
 
+local Var = {
+    Name = parsel.cons(1),
+    IndexedPrefix = parsel.cons(2)
+}
+
 function chunk()
     return stat:bind(function(statement)
         return tokens:symbol";":discardBind(statement)
@@ -57,3 +62,12 @@ function chunk()
 end
 
 block = chunk
+
+function var()
+    return tokens.identifier:bind(function(name)
+        return Var.Name(name)
+    end)
+    :otherwise(prefixexp:bind(function(prefix)
+        return index:fmap(Var.IndexedPrefix(prefix))
+    end))
+end
