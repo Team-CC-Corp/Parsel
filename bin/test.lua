@@ -23,3 +23,29 @@ local languageDef = {
     },
     caseSensitive = true,
 }
+
+local tokens = parsel.makeTokenParser(languageDef)
+
+-- Forward declaring parsers in order
+local chunk,
+    block,
+    var,
+    stat,
+    namelist,
+    varlist,
+    explist,
+    exp,
+    prefixexp,
+    suffixexp,
+    tableconstructor,
+    fieldlist,
+    field,
+    fieldsep,
+    functioncall,
+    suffixcall,
+    index,
+    args,
+    func,
+    funcbody,
+    funcname,
+    parlist
