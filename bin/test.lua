@@ -147,6 +147,9 @@ do
     }):fmap(function(list)
         return Stati.If(list[2], list[4], list[5], list[6])
     end)
+
+    -- Return
+    local returnStat = tokens:reserved"return":discardBind(explist:try():optionMaybe()):fmap(Stat.Return)
 end
 
 local Lua = chunk()
