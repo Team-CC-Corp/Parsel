@@ -107,6 +107,11 @@ do
     local doStat = tokens:reserved"do":discardBind(block():fmap(Stat.Do):bind(function(d)
         return tokens:reserved"end":discardBind(from(d))
     end))
+
+    -- Assignment
+    local assignmentStat = varlist:bind(function(vars)
+        return tokens:reservedOp"=":discardBind(explist:fmap(Stat.Assignment(vars)))
+    end):try()
 end
 
 local Lua = chunk()
