@@ -112,6 +112,13 @@ do
     local assignmentStat = varlist:bind(function(vars)
         return tokens:reservedOp"=":discardBind(explist:fmap(Stat.Assignment(vars)))
     end):try()
+
+    -- While
+    local whileStat = tokens:reserved"while":discardBind(exp():bind(function(expression)
+        return tokens:reserved"do":discardBind(block():fmap(Stat.While(expression)):bind(function(wh)
+            return tokens:reserved"end":discardBind(from(wh))
+        end))
+    end))
 end
 
 local Lua = chunk()
