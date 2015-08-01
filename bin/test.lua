@@ -97,4 +97,16 @@ function var()
         return index:fmap(Var.IndexedPrefix(prefix))
     end))
 end
+
+--------------------------------------------------
+-- Stat
+--------------------------------------------------
+
+do
+    -- Do
+    local doStat = tokens:reserved"do":discardBind(block():fmap(Stat.Do):bind(function(d)
+        return tokens:reserved"end":discardBind(from(d))
+    end))
+end
+
 local Lua = chunk()
