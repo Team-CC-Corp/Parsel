@@ -150,6 +150,9 @@ do
 
     -- Return
     local returnStat = tokens:reserved"return":discardBind(explist:try():optionMaybe()):fmap(Stat.Return)
+
+    -- Break
+    local breakStat = tokens:reserved"break":discardBind(parsel.from(Stat.Break))
 end
 
 local Lua = chunk()
