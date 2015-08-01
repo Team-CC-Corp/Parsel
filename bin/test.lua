@@ -59,6 +59,22 @@ local Var = {
     IndexedPrefix = parsel.cons(2)
 }
 
+local Stat = {
+    Do              = parsel.cons(1),   -- block
+    Assignment      = parsel.cons(2),   -- varlist, explist
+    While           = parsel.cons(2),   -- exp, block
+    Repeat          = parsel.cons(2),   -- block, exp
+    If              = parsel.cons(4),   -- exp, block, {ElseIf}, [block]
+    Return          = parsel.cons(1),   -- [explist]
+    Break           = parsel.cons(),
+    For             = parsel.cons(5),   -- Name, exp, exp, [exp], block
+    ForIn           = parsel.cons(3),   -- namelist, explist, block
+    FunctionCall    = parsel.cons(1),   -- functioncall
+    Local           = parsel.cons(2),   -- namelist, [explist]
+    Function        = parsel.cons(2),   -- funcname, funcbody
+    LocalFunction   = parsel.cons(2),   -- Name, funcbody
+}
+
 --------------------------------------------------
 -- Chunk, block
 --------------------------------------------------
