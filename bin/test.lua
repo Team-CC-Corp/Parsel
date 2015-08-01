@@ -119,6 +119,13 @@ do
             return tokens:reserved"end":discardBind(from(wh))
         end))
     end))
+
+    -- Repeat
+    local repeatStat = tokens:reserved"repeat":discardBind(block():bind(function(bl)
+        return tokens:reserved"until":discardBind(exp():fmap(function(expression)
+            return Stat.Repeat(bl, expression)
+        end))
+    end))
 end
 
 local Lua = chunk()
