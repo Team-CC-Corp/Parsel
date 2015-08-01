@@ -190,6 +190,11 @@ do
     local localStat = tokens:reserved"local":discardBind(namelist:bind(function(names)
         return reservedOp"=":discardBind(explist):try():optionMaybe():fmap(Stat.Local(names))
     end)):try()
+
+    -- Function
+    local functionStat = tokens:reserved"function":discardBind(funcname():bind(function(name)
+        return funcbody():fmap(Stat.Function(name))
+    end))
 end
 
 local Lua = chunk()
