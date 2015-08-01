@@ -195,6 +195,16 @@ do
     local functionStat = tokens:reserved"function":discardBind(funcname():bind(function(name)
         return funcbody():fmap(Stat.Function(name))
     end))
+
+    -- LocalFunction
+    local localFunctionStat = parsel.sequence({
+        tokens:reserved"local",     -- 1
+        tokens:reserved"function",  -- 2
+        tokens.identifier,          -- 3
+        funcbody()                  -- 4
+    }):fmap(function(list)
+        return Stat.LocalFunction(list[3], list[4])
+    end)
 end
 
 local Lua = chunk()
