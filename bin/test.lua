@@ -205,6 +205,24 @@ do
     }):fmap(function(list)
         return Stat.LocalFunction(list[3], list[4])
     end)
+
+    function stat()
+        return parsel.choice({
+            doStat,
+            assignmentStat,
+            whileStat,
+            repeatStat,
+            ifStat,
+            returnStat,
+            breakStat,
+            forStat,
+            forInStat,
+            functionCallStat,
+            localStat,
+            functionStat,
+            localFunctionStat
+        })
+    end
 end
 
 local Lua = chunk()
