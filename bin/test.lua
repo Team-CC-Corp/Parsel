@@ -185,6 +185,11 @@ do
 
     -- FunctionCall
     local functionCallStat = functioncall()
+
+    -- Local
+    local localStat = tokens:reserved"local":discardBind(namelist:bind(function(names)
+        return reservedOp"=":discardBind(explist):try():optionMaybe():fmap(Stat.Local(names))
+    end)):try()
 end
 
 local Lua = chunk()
