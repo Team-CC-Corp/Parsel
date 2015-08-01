@@ -182,6 +182,9 @@ do
     }):fmap(function(list)
         return Stat.ForIn(list[2], list[4], list[6])
     end)
+
+    -- FunctionCall
+    local functionCallStat = functioncall()
 end
 
 local Lua = chunk()
