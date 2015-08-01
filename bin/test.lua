@@ -225,4 +225,28 @@ do
     end
 end
 
+--------------------------------------------------
+-- Namelist
+--------------------------------------------------
+
+function namelist()
+    return tokens.identifier:sepBy1(tokens.comma)
+end
+
+--------------------------------------------------
+-- Varlist
+--------------------------------------------------
+
+function varlist()
+    return var():sepBy1(tokens.comma)
+end
+
+--------------------------------------------------
+-- Explist
+--------------------------------------------------
+
+function explist()
+    return exp():sepBy1(tokens.comma)
+end
+
 local Lua = chunk()
