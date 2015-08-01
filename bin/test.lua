@@ -75,6 +75,10 @@ local Stat = {
     LocalFunction   = parsel.cons(2),   -- Name, funcbody
 }
 
+local ElseIf = {
+    ElseIf = parsel.cons(2) -- exp, block
+}
+
 --------------------------------------------------
 -- Chunk, block
 --------------------------------------------------
@@ -126,6 +130,23 @@ do
             return Stat.Repeat(bl, expression)
         end))
     end))
+
+    -- If
+    local elseIf = tokens:reserved"elseif":discardBind(exp():bind(function(expression)
+        return tokens:reserved"then":discardBind(block():fmap(ElseIf.ElseIf(expression)))
+    end))
+
+    local ifStat = parsel.sequence({
+        tokens:reserved"if",    -- 1
+        exp(),                  -- 2
+        tokens:reserved"then",  -- 3
+        block(),                -- 4
+        elseIf:many(),          -- 5
+        tokens:reserved"else":discardBind(block()):optionMaybe(), -- 6
+        tokens:reserved"end"    -- 7
+    }):fmap(function(list)
+        return Stati.If(list[2], list[4], list[5], list[6])
+    end)
 end
 
 local Lua = chunk()
