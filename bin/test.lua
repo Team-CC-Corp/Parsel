@@ -50,10 +50,18 @@ local chunk,
     funcname,
     parlist
 
+--------------------------------------------------
+-- Data types
+--------------------------------------------------
+
 local Var = {
     Name = parsel.cons(1),
     IndexedPrefix = parsel.cons(2)
 }
+
+--------------------------------------------------
+-- Chunk, block
+--------------------------------------------------
 
 function chunk()
     return stat:bind(function(statement)
@@ -62,6 +70,10 @@ function chunk()
 end
 
 block = chunk
+
+--------------------------------------------------
+-- Var
+--------------------------------------------------
 
 function var()
     return tokens.identifier:bind(function(name)
