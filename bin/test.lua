@@ -153,6 +153,35 @@ do
 
     -- Break
     local breakStat = tokens:reserved"break":discardBind(parsel.from(Stat.Break))
+
+    -- For
+    local forStat = parsel.sequence({
+        tokens:reserved"for",   -- 1
+        tokens.identifier,      -- 2
+        tokens:reservedOp"=",   -- 3
+        exp(),                  -- 4
+        tokens.comma,           -- 5
+        exp(),                  -- 6
+        tokens.comma:discardBind(exp()):try():option(Expression.Number(1)), -- 7
+        tokens:reserved"do",    -- 8
+        block(),                -- 9
+        tokens:reserved"end"    -- 10
+    }):try():fmap(function(list)
+        return Stat.For(list[2], list[4], list[6], list[7], list[9])
+    end)
+
+    -- ForIn
+    local forInStat = parsel.sequence({
+        tokens:reserved"for",   -- 1
+        namelist,               -- 2
+        tokens:reserved"in",    -- 3
+        explist,                -- 4
+        tokens:reserved"do",    -- 5
+        block(),                -- 6
+        tokens:reserved"end"    -- 7
+    }):fmap(function(list)
+        return Stat.ForIn(list[2], list[4], list[6])
+    end)
 end
 
 local Lua = chunk()
