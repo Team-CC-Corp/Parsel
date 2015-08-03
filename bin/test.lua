@@ -179,7 +179,6 @@ local Parameter = {
 
 -- Often, tokens:parens(exp()) will end up recursive
 local function parensExpression()
-    print(parsel.getStack("test", 1))
     return tokens:symbol"(":bind(function()
         return exp():bind(function(expression)
             return tokens:symbol")":discardBind(parsel.from(expression))
