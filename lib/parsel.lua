@@ -521,56 +521,41 @@ end
 -- EXPRESSION
 
 Assoc = {
-    None = "non",
-    Left = "left",
-    Right= "right"
+    None = cons(),
+    Left = cons(),
+    Right= cons()
 }
 
-function infixOperator(p, assoc)
-    return {
-        type = "infix",
-        assoc = assoc,
-        parser = p
-    }
-end
-
-function prefixOperator(p)
-    return {
-        type="prefix",
-        parser = p
-    }
-end
-
-function postfixOperator(p)
-    return {
-        type="postfix",
-        parser = p
-    }
-end
+Operator = {
+    Infix = cons(2), -- parser, assoc
+    Prefix = cons(1), -- parser
+    Postfix = cons(1), -- parser
+}
 
 function Parser:buildExpressionParser(operators)
     local function splitOp(op, opTypesList)
         local rassocOp, lassocOp, nassocOp, prefixOp, postfixOp = unpack(opTypesList)
 
-        if op.type == "infix" then
-            if op.assoc == Assoc.None then
-                nassocOp = concat({op.parser}, nassocOp)
-            elseif op.assoc == Assoc.Left then
-                lassocOp = concat({op.parser}, lassocOp)
-            elseif op.assoc == Assoc.Right then
-                rassocOp = concat({op.parser}, rassocOp)
+        if op.cons() == Operator.Infix then
+            local parser, assoc = op.get()
+            if assoc == Assoc.None then
+                nassocOp = concat({parser}, nassocOp)
+            elseif assoc == Assoc.Left then
+                lassocOp = concat({parser}, lassocOp)
+            elseif assoc == Assoc.Right then
+                rassocOp = concat({parser}, rassocOp)
             end
-        elseif op.type == "prefix" then
-            prefixOp = concat({op.parser}, prefixOp)
-        elseif op.type == "postfix" then
-            postfixOp = concat({op.parser}, postfixOp)
+        elseif op.cons() == Operator.Prefix then
+            prefixOp = concat({op.get()}, prefixOp)
+        elseif op.cons() == Operator.Postfix then
+            postfixOp = concat({op.get()}, postfixOp)
         end
 
         return {rassocOp, lassocOp, nassocOp, prefixOp, postfixOp}
     end
 
     local function ambigious(assoc, op)
-        return op:discardBind(fail("ambigious use of a " .. assoc .. " associative operator")):try()
+        return op:discardBind(fail("ambigious use of an operator")):try()
     end
 
     local function makeParser(term, ops)
