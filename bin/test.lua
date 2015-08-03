@@ -166,9 +166,11 @@ end
 do
     -- Do
     local function doStat()
-        return tokens:reserved"do":discardBind(block():fmap(Stat.Do):bind(function(d)
-            return tokens:reserved"end":discardBind(from(d))
-        end))
+        return tokens:reserved"do":bind(function()
+            return block():fmap(Stat.Do):bind(function(d)
+                return tokens:reserved"end":discardBind(from(d))
+            end)
+        end)
     end
 
     -- Assignment
