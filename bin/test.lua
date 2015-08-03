@@ -412,30 +412,30 @@ do
             parsel.Operator.Prefix(tokens:reservedOp"-":discardBind(parsel.from(UnaryOp.Negate))),
         },
         {
-            parsel.Operator.Infix(tokens:reservedOp"*":discardBind(parsel.from(BinOp.Multiply))),
-            parsel.Operator.Infix(tokens:reservedOp"/":discardBind(parsel.from(BinOp.Divide))),
-            parsel.Operator.Infix(tokens:reservedOp"%":discardBind(parsel.from(BinOp.Mod)))
+            parsel.Operator.Infix(tokens:reservedOp"*":discardBind(parsel.from(BinOp.Multiply)), parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp"/":discardBind(parsel.from(BinOp.Divide)), parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp"%":discardBind(parsel.from(BinOp.Mod)), parsel.Assoc.Left)
         },
         {
-            parsel.Operator.Infix(tokens:reservedOp"+":discardBind(parsel.from(BinOp.Plus))),
-            parsel.Operator.Infix(tokens:reservedOp"-":discardBind(parsel.from(BinOp.Minus)))
+            parsel.Operator.Infix(tokens:reservedOp"+":discardBind(parsel.from(BinOp.Plus)), parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp"-":discardBind(parsel.from(BinOp.Minus)), parsel.Assoc.Left)
         },
         {
-            parsel.Operator.Infix(tokens:reservedOp"..":discardBind(parsel.from(BinOp.Concat)))
+            parsel.Operator.Infix(tokens:reservedOp"..":discardBind(parsel.from(BinOp.Concat)), parsel.Assoc.Right)
         },
         {
-            parsel.Operator.Infix(tokens:reservedOp"<":discardBind(parsel.from(BinOp.LT))),
-            parsel.Operator.Infix(tokens:reservedOp">":discardBind(parsel.from(BinOp.GT))),
-            parsel.Operator.Infix(tokens:reservedOp"<=":discardBind(parsel.from(BinOp.LE))),
-            parsel.Operator.Infix(tokens:reservedOp">=":discardBind(parsel.from(BinOp.GE))),
-            parsel.Operator.Infix(tokens:reservedOp"~=":discardBind(parsel.from(BinOp.NotEquals))),
-            parsel.Operator.Infix(tokens:reservedOp"==":discardBind(parsel.from(BinOp.Equals)))
+            parsel.Operator.Infix(tokens:reservedOp"<":discardBind(parsel.from(BinOp.LT)), parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp">":discardBind(parsel.from(BinOp.GT)), parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp"<=":discardBind(parsel.from(BinOp.LE)), parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp">=":discardBind(parsel.from(BinOp.GE)), parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp"~=":discardBind(parsel.from(BinOp.NotEquals)), parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp"==":discardBind(parsel.from(BinOp.Equals)), parsel.Assoc.Left)
         },
         {
-            parsel.Operator.Infix(tokens:reservedOp"and":discardBind(parsel.from(BinOp.And)))
+            parsel.Operator.Infix(tokens:reservedOp"and":discardBind(parsel.from(BinOp.And)), parsel.Assoc.Left)
         },
         {
-            parsel.Operator.Infix(tokens:reservedOp"or":discardBind(parsel.from(BinOp.Or)))
+            parsel.Operator.Infix(tokens:reservedOp"or":discardBind(parsel.from(BinOp.Or)), parsel.Assoc.Left)
         }
     }
 
