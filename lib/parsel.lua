@@ -792,7 +792,7 @@ function makeTokenParser(languageDef)
 
     constants(function()
         local function number(base, baseDigit)
-            return baseDigit:fmap(function(digits)
+            return baseDigit:many1():fmap(function(digits)
                 return foldl(function(x, d) return base * x + tonumber(d, base) end, 0, digits)
             end)
         end
