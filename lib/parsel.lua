@@ -945,48 +945,45 @@ function makeTokenParser(languageDef)
     end
 
     do -- do this outside constants() because lots of constants depend on whitespace
-        local oneLineComment = string(languageDef.commentLine)
-                                :try()
-                                :discardBind(anyChar:manyTill(endOfLine:otherwise(eof)))
-                                :discardBind(from(nil))
-
-        local function startEnd()
-            return languageDef.commentStart .. languageDef.commentEnd
-        end
-
-        local function inCommentMulti()
-            return string(commentEnd):try():discardBind(from(nil))
-                    :otherwise(multiLineComment:try():bind(inCommentMulti))
-                    :otherwise(noneOf(startEnd()):skipMany1():bind(inCommentMulti))
-                    :otherwise(oneOf(startEnd()):bind(inCommentMulti))
-                    :expect"end of comment"
-        end
-
-        local function inCommentSingle()
-            return string(commentEnd):try():discardBind(from(nil))
-                    :otherwise(noneOf(startEnd()):skipMany1():bind(inCommentSingle))
-                    :otherwise(oneOf(startEnd()):bind(inCommentSingle))
-                    :expect"end of comment"
-        end
-
-        local inComment
-        if languageDef.nestedComments then
-            inComment = inCommentMulti()
-        else
-            inComment = inCommentSingle()
-        end
-
-        local multiLineComment = string(languageDef.commentStart)
-                                :try()
-                                :discardBind(inComment)
-
         local whiteSpace = satisfy(function(c) return c:find"%s" ~= nil end):skipMany1()
 
         if languageDef.commentLine then
+            local oneLineComment = string(languageDef.commentLine)
+                                    :try()
+                                    :discardBind(anyChar:manyTill(endOfLine:otherwise(eof)))
+                                    :discardBind(from(nil))
+
             whiteSpace = whiteSpace:otherwise(oneLineComment)
         end
 
         if languageDef.commentStart then
+            local function startEnd()
+                return languageDef.commentStart .. languageDef.commentEnd
+            end
+
+            local function inCommentMulti()
+                return string(languageDef.commentEnd):try():discardBind(from(nil))
+                        :otherwise(multiLineComment:try():bind(inCommentMulti))
+                        :otherwise(noneOf(startEnd()):skipMany1():bind(inCommentMulti))
+                        :otherwise(oneOf(startEnd()):bind(inCommentMulti))
+                        :expect"end of comment"
+            end
+
+            local function inCommentSingle()
+                return anyChar:manyTill(endOfLine:otherwise(eof)):discardBind(from(nil))
+            end
+
+            local inComment
+            if languageDef.nestedComments then
+                inComment = inCommentMulti()
+            else
+                inComment = inCommentSingle()
+            end
+
+            local multiLineComment = string(languageDef.commentStart)
+                                    :try()
+                                    :discardBind(inComment)
+
             whiteSpace = whiteSpace:otherwise(multiLineComment)
         end
 
