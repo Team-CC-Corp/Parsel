@@ -857,7 +857,7 @@ function makeTokenParser(languageDef)
             end)
         end):expect"operator"
 
-        tokenParser.operator = self:lexeme(
+        tokenParser.operator = tokenParser:lexeme(
             oper:bind(function(name)
                 if contains(languageDef.reservedOpNames, name) then
                     return unexpected("reserved operator " .. name)
