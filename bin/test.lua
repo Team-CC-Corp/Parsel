@@ -633,9 +633,61 @@ function parlist1()
     return tokens:commaSep1(parameter)
 end
 
+--------------------------------------------------
+-- Thunking
+--------------------------------------------------
+local function thunk(f)
+    local run = false
+    local a
+    return function()
+        if not run then
+            print(parsel.getStack("Running thunk", 1))
+            a = f()
+            run = true
+        end
+        return a
+    end
+end
+
+chunk = thunk(chunk)
+block = thunk(block)
+var = thunk(var)
+stat = thunk(stat)
+namelist = thunk(namelist)
+namelist1 = thunk(namelist1)
+varlist = thunk(varlist)
+varlist1 = thunk(varlist1)
+explist = thunk(explist)
+explist1 = thunk(explist1)
+exp = thunk(exp)
+stringExp = thunk(stringExp)
+prefixexp = thunk(prefixexp)
+suffixexp = thunk(suffixexp)
+tableconstructor = thunk(tableconstructor)
+--fieldlist = thunk(fieldlist)
+field = thunk(field)
+fieldsep = thunk(fieldsep)
+prefixcall = thunk(prefixcall)
+functioncall = thunk(functioncall)
+suffixcall = thunk(suffixcall)
+method = thunk(method)
+index = thunk(index)
+fargs = thunk(fargs)
+func = thunk(func)
+funcbody = thunk(funcbody)
+funcname = thunk(funcname)
+parlist = thunk(parlist)
+parlist1 = thunk(parlist1)
+
+--------------------------------------------------
+-- Lua
+--------------------------------------------------
+
 local Lua = chunk()
 
+--------------------------------------------------
 -- File
+--------------------------------------------------
 
 assert((...), "Usage: test.lua path")
 local path = shell.resolve((...))
