@@ -86,6 +86,43 @@ local ElseIf = {
     ElseIf = parsel.cons(2) -- exp, block
 }
 
+local Expression = {
+    Prefix = parsel.cons(1),
+    Nil = parsel.cons(),
+    Boolean = parsel.cons(1),
+    Number = parsel.cons(1),
+    String = parsel.cons(1),
+    Function = parsel.cons(1),
+    TableConstructor = parsel.cons(1),
+    Dots = parsel.cons(),
+    BinOp = parsel.cons(1),
+    UnaryOp = parsel.cons(1)
+}
+
+local BinOp = {
+    Plus = parsel.cons(2),
+    Minus = parsel.cons(2),
+    Multiply = parsel.cons(2),
+    Divide = parsel.cons(2),
+    Mod = parsel.cons(2),
+    Pow = parsel.cons(2),
+    Concat = parsel.cons(2),
+    Equals = parsel.cons(2),
+    NotEquals = parsel.cons(2),
+    LE = parsel.cons(2),
+    GE = parsel.cons(2),
+    LT = parsel.cons(2),
+    GT = parsel.cons(2),
+    And = parsel.cons(2),
+    Or = parsel.cons(2)
+}
+
+local UnaryOp = {
+    Negate = parsel.cons(1),
+    Length = parsel.cons(1),
+    Not = parsel.cons(1)
+}
+
 local PrefixExp = {
     FunctionCall    = parsel.cons(2),   -- functioncall, suffixexp
     Name            = parsel.cons(2),   -- Name, suffixexp
@@ -352,13 +389,68 @@ end
 -- Exp
 --------------------------------------------------
 
--- TODO
+do
+    local function term()
+        return parsel.choice({
+            prefixexp():try(),
+            tokens.reserved"nil":fmap(Expression.Nil),
+            tokens.int:otherwise(tokens.float):fmap(Expression.Number),
+            stringExp(),
+            func(),
+            tableconstructor(),
+            tokens.symbol"...":discardBind(parsel.from(Expression.Dots)),
+        })
+    end
+
+    local ops = {
+        {
+            parsel.Operator.Infix(tokens:reservedOp"^":discardBind(parsel.from(BinOp.Pow)))
+        },
+        {
+            parsel.Operator.Prefix(tokens:reserved"not":discardBind(parsel.from(UnaryOp.Not))),
+            parsel.Operator.Prefix(tokens:reservedOp"#":discardBind(parsel.from(UnaryOp.Length))),
+            parsel.Operator.Prefix(tokens:reservedOp"-":discardBind(parsel.from(UnaryOp.Negate))),
+        },
+        {
+            parsel.Operator.Infix(tokens:reservedOp"*":discardBind(parsel.from(BinOp.Multiply))),
+            parsel.Operator.Infix(tokens:reservedOp"/":discardBind(parsel.from(BinOp.Divide))),
+            parsel.Operator.Infix(tokens:reservedOp"%":discardBind(parsel.from(BinOp.Mod)))
+        },
+        {
+            parsel.Operator.Infix(tokens:reservedOp"+":discardBind(parsel.from(BinOp.Plus))),
+            parsel.Operator.Infix(tokens:reservedOp"-":discardBind(parsel.from(BinOp.Minus)))
+        },
+        {
+            parsel.Operator.Infix(tokens:reservedOp"..":discardBind(parsel.from(BinOp.Concat)))
+        },
+        {
+            parsel.Operator.Infix(tokens:reservedOp"<":discardBind(parsel.from(BinOp.LT))),
+            parsel.Operator.Infix(tokens:reservedOp">":discardBind(parsel.from(BinOp.GT))),
+            parsel.Operator.Infix(tokens:reservedOp"<=":discardBind(parsel.from(BinOp.LE))),
+            parsel.Operator.Infix(tokens:reservedOp">=":discardBind(parsel.from(BinOp.GE))),
+            parsel.Operator.Infix(tokens:reservedOp"~=":discardBind(parsel.from(BinOp.NotEquals))),
+            parsel.Operator.Infix(tokens:reservedOp"==":discardBind(parsel.from(BinOp.Equals)))
+        },
+        {
+            parsel.Operator.Infix(tokens:reservedOp"and":discardBind(parsel.from(BinOp.And)))
+        },
+        {
+            parsel.Operator.Infix(tokens:reservedOp"or":discardBind(parsel.from(BinOp.Or)))
+        }
+    }
+
+    function exp()
+        return term():buildExpressionParser(ops)
+    end
+end
 
 --------------------------------------------------
 -- StringExp
 --------------------------------------------------
 
--- TODO
+function stringExp()
+    return tokens:stringLiteral"\"":fmap(Expression.String)
+end
 
 --------------------------------------------------
 -- Prefixexp
@@ -383,7 +475,7 @@ end
 --------------------------------------------------
 
 function tableconstructor()
-    return tokens:braces(field():sepBy(fieldsep()))
+    return tokens:braces(field():sepBy(fieldsep())):fmap(Expression.TableConstructor)
 end
 
 --------------------------------------------------
