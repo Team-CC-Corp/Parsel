@@ -71,7 +71,7 @@ function thunk(f, name)
     local a
     return function()
         if not run then
-            print((parsel.getStack("Running thunk: " .. name, 1):gsub("\n.*", "")))
+            -- print((parsel.getStack("Running thunk: " .. name, 1):gsub("\n.*", "")))
             a = f()
             run = true
         end
