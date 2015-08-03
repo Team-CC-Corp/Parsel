@@ -142,7 +142,7 @@ end
 
 -- ERROR UTIL
 
-function stackError(msg, level)
+function getStack(msg, level)
     if type(level) ~= "number" or level == 0 then
         level = 1
     end
@@ -165,7 +165,16 @@ function stackError(msg, level)
         errors[16] = "..."
         while table.remove(errors, 17) do end
     end
-    error(table.concat(errors, "\n"), 0)
+
+    return table.concat(errors, "\n")
+end
+
+function stackError(msg, level)
+    if type(level) ~= "number" or level == 0 then
+        level = 1
+    end
+
+    error(getStack(msg, level + 1), 0)
 end
 function stackAssert(cond, msg, level)
     if type(level) ~= "number" or level == 0 then
