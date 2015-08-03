@@ -948,19 +948,22 @@ function makeTokenParser(languageDef)
                                 :discardBind(anyChar:manyTill(endOfLine:otherwise(eof)))
                                 :discardBind(from(nil))
 
-        local startEnd = languageDef.commentStart .. languageDef.commentEnd
+        local function startEnd()
+            return languageDef.commentStart .. languageDef.commentEnd
+        end
+
         local function inCommentMulti()
             return string(commentEnd):try():discardBind(from(nil))
                     :otherwise(multiLineComment:try():bind(inCommentMulti))
-                    :otherwise(noneOf(startEnd):skipMany1():bind(inCommentMulti))
-                    :otherwise(oneOf(startEnd):bind(inCommentMulti))
+                    :otherwise(noneOf(startEnd()):skipMany1():bind(inCommentMulti))
+                    :otherwise(oneOf(startEnd()):bind(inCommentMulti))
                     :expect"end of comment"
         end
 
         local function inCommentSingle()
             return string(commentEnd):try():discardBind(from(nil))
-                    :otherwise(noneOf(startEnd):skipMany1():bind(inCommentSingle))
-                    :otherwise(oneOf(startEnd):bind(inCommentSingle))
+                    :otherwise(noneOf(startEnd()):skipMany1():bind(inCommentSingle))
+                    :otherwise(oneOf(startEnd()):bind(inCommentSingle))
                     :expect"end of comment"
         end
 
