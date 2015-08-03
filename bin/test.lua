@@ -165,119 +165,147 @@ end
 
 do
     -- Do
-    local doStat = tokens:reserved"do":discardBind(block():fmap(Stat.Do):bind(function(d)
-        return tokens:reserved"end":discardBind(from(d))
-    end))
+    local function doStat()
+        return tokens:reserved"do":discardBind(block():fmap(Stat.Do):bind(function(d)
+            return tokens:reserved"end":discardBind(from(d))
+        end))
+    end
 
     -- Assignment
-    local assignmentStat = varlist1():bind(function(vars)
-        return tokens:reservedOp"=":discardBind(explist1():fmap(Stat.Assignment(vars)))
-    end):try()
+    local function assignmentStat()
+        return varlist1():bind(function(vars)
+            return tokens:reservedOp"=":discardBind(explist1():fmap(Stat.Assignment(vars)))
+        end):try()
+    end
 
     -- While
-    local whileStat = tokens:reserved"while":discardBind(exp():bind(function(expression)
-        return tokens:reserved"do":discardBind(block():fmap(Stat.While(expression)):bind(function(wh)
-            return tokens:reserved"end":discardBind(from(wh))
+    local function whileStat()
+        return tokens:reserved"while":discardBind(exp():bind(function(expression)
+            return tokens:reserved"do":discardBind(block():fmap(Stat.While(expression)):bind(function(wh)
+                return tokens:reserved"end":discardBind(from(wh))
+            end))
         end))
-    end))
+    end
 
     -- Repeat
-    local repeatStat = tokens:reserved"repeat":discardBind(block():bind(function(bl)
-        return tokens:reserved"until":discardBind(exp():fmap(function(expression)
-            return Stat.Repeat(bl, expression)
+    local function repeatStat()
+        return tokens:reserved"repeat":discardBind(block():bind(function(bl)
+            return tokens:reserved"until":discardBind(exp():fmap(function(expression)
+                return Stat.Repeat(bl, expression)
+            end))
         end))
-    end))
+    end
 
     -- If
-    local elseIf = tokens:reserved"elseif":discardBind(exp():bind(function(expression)
-        return tokens:reserved"then":discardBind(block():fmap(ElseIf.ElseIf(expression)))
-    end))
+    local function elseIf()
+        return tokens:reserved"elseif":discardBind(exp():bind(function(expression)
+            return tokens:reserved"then":discardBind(block():fmap(ElseIf.ElseIf(expression)))
+        end))
+    end
 
-    local ifStat = parsel.sequence({
-        tokens:reserved"if",    -- 1
-        exp(),                  -- 2
-        tokens:reserved"then",  -- 3
-        block(),                -- 4
-        elseIf:many(),          -- 5
-        tokens:reserved"else":discardBind(block()):optionMaybe(), -- 6
-        tokens:reserved"end"    -- 7
-    }):fmap(function(list)
-        return Stati.If(list[2], list[4], list[5], list[6])
-    end)
+    local function ifStat()
+        return parsel.sequence({
+            tokens:reserved"if",    -- 1
+            exp(),                  -- 2
+            tokens:reserved"then",  -- 3
+            block(),                -- 4
+            elseIf:many(),          -- 5
+            tokens:reserved"else":discardBind(block()):optionMaybe(), -- 6
+            tokens:reserved"end"    -- 7
+        }):fmap(function(list)
+            return Stati.If(list[2], list[4], list[5], list[6])
+        end)
+    end
 
     -- Return
-    local returnStat = tokens:reserved"return":discardBind(explist1():try():optionMaybe()):fmap(Stat.Return)
+    local function returnStat()
+        return tokens:reserved"return":discardBind(explist1():try():optionMaybe()):fmap(Stat.Return)
+    end
 
     -- Break
-    local breakStat = tokens:reserved"break":discardBind(parsel.from(Stat.Break))
+    local function breakStat()
+        return tokens:reserved"break":discardBind(parsel.from(Stat.Break))
+    end
 
     -- For
-    local forStat = parsel.sequence({
-        tokens:reserved"for",   -- 1
-        tokens.identifier,      -- 2
-        tokens:reservedOp"=",   -- 3
-        exp(),                  -- 4
-        tokens.comma,           -- 5
-        exp(),                  -- 6
-        tokens.comma:discardBind(exp()):try():option(Expression.Number(1)), -- 7
-        tokens:reserved"do",    -- 8
-        block(),                -- 9
-        tokens:reserved"end"    -- 10
-    }):try():fmap(function(list)
-        return Stat.For(list[2], list[4], list[6], list[7], list[9])
-    end)
+    local function forStat()
+        return parsel.sequence({
+            tokens:reserved"for",   -- 1
+            tokens.identifier,      -- 2
+            tokens:reservedOp"=",   -- 3
+            exp(),                  -- 4
+            tokens.comma,           -- 5
+            exp(),                  -- 6
+            tokens.comma:discardBind(exp()):try():option(Expression.Number(1)), -- 7
+            tokens:reserved"do",    -- 8
+            block(),                -- 9
+            tokens:reserved"end"    -- 10
+        }):try():fmap(function(list)
+            return Stat.For(list[2], list[4], list[6], list[7], list[9])
+        end)
+    end
 
     -- ForIn
-    local forInStat = parsel.sequence({
-        tokens:reserved"for",   -- 1
-        namelist1(),             -- 2
-        tokens:reserved"in",    -- 3
-        explist1(),              -- 4
-        tokens:reserved"do",    -- 5
-        block(),                -- 6
-        tokens:reserved"end"    -- 7
-    }):fmap(function(list)
-        return Stat.ForIn(list[2], list[4], list[6])
-    end)
+    local function forInStat()
+        return parsel.sequence({
+            tokens:reserved"for",   -- 1
+            namelist1(),             -- 2
+            tokens:reserved"in",    -- 3
+            explist1(),              -- 4
+            tokens:reserved"do",    -- 5
+            block(),                -- 6
+            tokens:reserved"end"    -- 7
+        }):fmap(function(list)
+            return Stat.ForIn(list[2], list[4], list[6])
+        end)
+    end
 
     -- FunctionCall
-    local functionCallStat = functioncall()
+    local function functionCallStat()
+        return functioncall()
+    end
 
     -- Local
-    local localStat = tokens:reserved"local":discardBind(namelist1():bind(function(names)
-        return reservedOp"=":discardBind(explist1()):try():optionMaybe():fmap(Stat.Local(names))
-    end)):try()
+    local function localStat()
+        return tokens:reserved"local":discardBind(namelist1():bind(function(names)
+            return reservedOp"=":discardBind(explist1()):try():optionMaybe():fmap(Stat.Local(names))
+        end)):try()
+    end
 
     -- Function
-    local functionStat = tokens:reserved"function":discardBind(funcname():bind(function(name)
-        return funcbody():fmap(Stat.Function(name))
-    end))
+    local function functionStat()
+        return tokens:reserved"function":discardBind(funcname():bind(function(name)
+            return funcbody():fmap(Stat.Function(name))
+        end))
+    end
 
     -- LocalFunction
-    local localFunctionStat = parsel.sequence({
-        tokens:reserved"local",     -- 1
-        tokens:reserved"function",  -- 2
-        tokens.identifier,          -- 3
-        funcbody()                  -- 4
-    }):fmap(function(list)
-        return Stat.LocalFunction(list[3], list[4])
-    end)
+    local function localFunctionStat()
+        return parsel.sequence({
+            tokens:reserved"local",     -- 1
+            tokens:reserved"function",  -- 2
+            tokens.identifier,          -- 3
+            funcbody()                  -- 4
+        }):fmap(function(list)
+            return Stat.LocalFunction(list[3], list[4])
+        end)
+    end
 
     function stat()
         return parsel.choice({
-            doStat,
-            assignmentStat,
-            whileStat,
-            repeatStat,
-            ifStat,
-            returnStat,
-            breakStat,
-            forStat,
-            forInStat,
-            functionCallStat,
-            localStat,
-            functionStat,
-            localFunctionStat
+            doStat(),
+            assignmentStat(),
+            whileStat(),
+            repeatStat(),
+            ifStat(),
+            returnStat(),
+            breakStat(),
+            forStat(),
+            forInStat(),
+            functionCallStat(),
+            localStat(),
+            functionStat(),
+            localFunctionStat()
         })
     end
 end
