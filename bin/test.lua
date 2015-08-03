@@ -173,6 +173,17 @@ local Parameter = {
     Vararg = parsel.cons()
 }
 
+-- Util
+
+local function parensExpression()
+    print(parsel.getStack("test", 1))
+    return tokens:symbol"(":bind(function()
+        return exp():bind(function(expression)
+            return tokens:symbol")":discardBind(parsel.from(expression))
+        end)
+    end):try()
+end
+
 --------------------------------------------------
 -- Chunk, block
 --------------------------------------------------
@@ -205,7 +216,7 @@ do
     local function doStat()
         return tokens:reserved"do":bind(function()
             return block():fmap(Stat.Do):bind(function(d)
-                return tokens:reserved"end":discardBind(from(d))
+                return tokens:reserved"end":discardBind(parsel.from(d))
             end)
         end)
     end
@@ -221,7 +232,7 @@ do
     local function whileStat()
         return tokens:reserved"while":discardBind(exp():bind(function(expression)
             return tokens:reserved"do":discardBind(block():fmap(Stat.While(expression)):bind(function(wh)
-                return tokens:reserved"end":discardBind(from(wh))
+                return tokens:reserved"end":discardBind(parsel.from(wh))
             end))
         end))
     end
@@ -354,7 +365,7 @@ end
 --------------------------------------------------
 
 function namelist()
-    return namelist1():otherwise(from({}))
+    return namelist1():otherwise(parsel.from({}))
 end
 
 function namelist1()
@@ -366,7 +377,7 @@ end
 --------------------------------------------------
 
 function varlist()
-    return varlist1():otherwise(from({}))
+    return varlist1():otherwise(parsel.from({}))
 end
 
 function varlist1()
@@ -378,7 +389,7 @@ end
 --------------------------------------------------
 
 function explist()
-    return explist1():otherwise(from({}))
+    return explist1():otherwise(parsel.from({}))
 end
 
 function explist1()
@@ -393,12 +404,12 @@ do
     local function term()
         return parsel.choice({
             prefixexp():try(),
-            tokens.reserved"nil":fmap(Expression.Nil),
-            tokens.int:otherwise(tokens.float):fmap(Expression.Number),
+            tokens:reserved"nil":fmap(Expression.Nil),
+            tokens.integer:otherwise(tokens.float):fmap(Expression.Number),
             stringExp(),
             func(),
             tableconstructor(),
-            tokens.symbol"...":discardBind(parsel.from(Expression.Dots)),
+            tokens:symbol"...":discardBind(parsel.from(Expression.Dots)),
         })
     end
 
@@ -460,7 +471,7 @@ function prefixexp()
     return parsel.choice({
         functioncall():try():fmap(PrefixExp.FunctionCall),
         tokens.identifier:fmap(PrefixExp.Name),
-        tokens:parens(exp()):fmap(PrefixExp.Expression)
+        parensExpression():fmap(PrefixExp.Expression)
     }):bind(function(a)
         return suffixexp():fmap(a)
     end)
@@ -507,7 +518,7 @@ end
 function prefixcall()
     return parsel.choice({
         tokens.identifier:fmap(FunctionCall.Prefix.Name),
-        tokens:parens(exp()):fmap(FunctionCall.Prefix.Expression)
+        parensExpression():fmap(FunctionCall.Prefix.Expression)
     }):bind(function(a)
         return suffixexp():fmap(a)
     end)
@@ -584,7 +595,7 @@ end
 
 function funcbody()
     return parsel.sequence({
-        tokens:parens(parlist), -- 1
+        tokens:parens(parlist()), -- 1
         block(),                -- 2
         tokens:reserved"end"    -- 3
     }):fmap(function(list)
@@ -600,7 +611,7 @@ function funcname()
     return tokens.identifier:sepBy1(tokens.dot):bind(function(names)
         return tokens.colon:discardBind(tokens.identifier)
                 :fmap(FunctionName.Method(names))
-                :otherwise(from(FunctionName.Function(names)))
+                :otherwise(parsel.from(FunctionName.Function(names)))
     end)
 end
 
@@ -609,7 +620,7 @@ end
 --------------------------------------------------
 
 function parlist()
-    return parlist1():otherwise(from({}))
+    return parlist1():otherwise(parsel.from({}))
 end
 
 function parlist1()
@@ -617,7 +628,7 @@ function parlist1()
                         :otherwise(
                             tokens:symbol"...":discardBind(
                                 tokens.comma:notFollowedBy()
-                            ):discardBind(from(Parameter.Vararg))
+                            ):discardBind(parsel.from(Parameter.Vararg))
                         )
     return tokens:commaSep1(parameter)
 end
