@@ -1002,7 +1002,7 @@ function makeTokenParser(languageDef)
             whiteSpace = whiteSpace:otherwise(multiLineComment)
         end
 
-        tokenParser.whiteSpace = whiteSpace
+        tokenParser.whiteSpace = whiteSpace:skipMany()
     end
 
     runConstants()
