@@ -217,11 +217,12 @@ end
 -- CHAR
 
 function satisfy(f)
+    local stack = getStack("Failed satisfy", 1)
     return anyChar:bind(function(c)
         if f(c) then
             return from(c)
         else
-            return zero
+            return zero:expect(stack)
         end
     end):try()
 end
