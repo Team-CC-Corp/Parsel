@@ -66,6 +66,19 @@ local function id(...)
     return ...
 end
 
+function thunk(f, name)
+    local run = false
+    local a
+    return function()
+        if not run then
+            print((parsel.getStack("Running thunk: " .. name, 1):gsub("\n.*", "")))
+            a = f()
+            run = true
+        end
+        return a
+    end
+end
+
 -- Algebraic Data Type util
 
 
@@ -473,6 +486,13 @@ end
 
 function from(a)
     return new(function(s) return true, a, s, false end)
+end
+
+-- Use to eliminate unfortunate recursive thunks, since Lua isn't lazy
+function fromThunk(f)
+    return new(function(s)
+        return f().runParser(s)
+    end)
 end
 
 function Parser:expect(str)

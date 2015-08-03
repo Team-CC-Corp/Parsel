@@ -174,25 +174,12 @@ local Parameter = {
 }
 
 --------------------------------------------------
--- Util
---------------------------------------------------
-
--- Often, tokens:parens(exp()) will end up recursive
-local function parensExpression()
-    return tokens:symbol"(":bind(function()
-        return exp():bind(function(expression)
-            return tokens:symbol")":discardBind(parsel.from(expression))
-        end)
-    end):try()
-end
-
---------------------------------------------------
 -- Chunk, block
 --------------------------------------------------
 
 function chunk()
-    return stat():bind(function(statement)
-        return tokens:symbol";":discardBind(statement)
+    return stat:bind(function(statement)
+        return tokens:symbol";":optionMaybe():discardBind(statement)
     end):many()
 end
 
@@ -204,8 +191,8 @@ block = chunk
 
 function var()
     return tokens.identifier:bind(Var.Name)
-    :otherwise(prefixexp():bind(function(prefix)
-        return index():fmap(Var.IndexedPrefix(prefix))
+    :otherwise(prefixexp:bind(function(prefix)
+        return index:fmap(Var.IndexedPrefix(prefix))
     end))
 end
 
@@ -217,7 +204,7 @@ do
     -- Do
     local function doStat()
         return tokens:reserved"do":bind(function()
-            return block():fmap(Stat.Do):bind(function(d)
+            return block:fmap(Stat.Do):bind(function(d)
                 return tokens:reserved"end":discardBind(parsel.from(d))
             end)
         end)
@@ -225,15 +212,15 @@ do
 
     -- Assignment
     local function assignmentStat()
-        return varlist1():bind(function(vars)
-            return tokens:reservedOp"=":discardBind(explist1():fmap(Stat.Assignment(vars)))
+        return varlist1:bind(function(vars)
+            return tokens:reservedOp"=":discardBind(explist1:fmap(Stat.Assignment(vars)))
         end):try()
     end
 
     -- While
     local function whileStat()
-        return tokens:reserved"while":discardBind(exp():bind(function(expression)
-            return tokens:reserved"do":discardBind(block():fmap(Stat.While(expression)):bind(function(wh)
+        return tokens:reserved"while":discardBind(exp:bind(function(expression)
+            return tokens:reserved"do":discardBind(block:fmap(Stat.While(expression)):bind(function(wh)
                 return tokens:reserved"end":discardBind(parsel.from(wh))
             end))
         end))
@@ -241,8 +228,8 @@ do
 
     -- Repeat
     local function repeatStat()
-        return tokens:reserved"repeat":discardBind(block():bind(function(bl)
-            return tokens:reserved"until":discardBind(exp():fmap(function(expression)
+        return tokens:reserved"repeat":discardBind(block:bind(function(bl)
+            return tokens:reserved"until":discardBind(exp:fmap(function(expression)
                 return Stat.Repeat(bl, expression)
             end))
         end))
@@ -250,19 +237,19 @@ do
 
     -- If
     local function elseIf()
-        return tokens:reserved"elseif":discardBind(exp():bind(function(expression)
-            return tokens:reserved"then":discardBind(block():fmap(ElseIf.ElseIf(expression)))
+        return tokens:reserved"elseif":discardBind(exp:bind(function(expression)
+            return tokens:reserved"then":discardBind(block:fmap(ElseIf.ElseIf(expression)))
         end))
     end
 
     local function ifStat()
         return parsel.sequence({
             tokens:reserved"if",    -- 1
-            exp(),                  -- 2
+            exp,                    -- 2
             tokens:reserved"then",  -- 3
-            block(),                -- 4
-            elseIf:many(),          -- 5
-            tokens:reserved"else":discardBind(block()):optionMaybe(), -- 6
+            block,                  -- 4
+            elseIf():many(),          -- 5
+            tokens:reserved"else":discardBind(block):optionMaybe(), -- 6
             tokens:reserved"end"    -- 7
         }):fmap(function(list)
             return Stati.If(list[2], list[4], list[5], list[6])
@@ -271,7 +258,7 @@ do
 
     -- Return
     local function returnStat()
-        return tokens:reserved"return":discardBind(explist1():try():optionMaybe()):fmap(Stat.Return)
+        return tokens:reserved"return":discardBind(explist1:try():optionMaybe()):fmap(Stat.Return)
     end
 
     -- Break
@@ -285,12 +272,12 @@ do
             tokens:reserved"for",   -- 1
             tokens.identifier,      -- 2
             tokens:reservedOp"=",   -- 3
-            exp(),                  -- 4
+            exp,                    -- 4
             tokens.comma,           -- 5
-            exp(),                  -- 6
-            tokens.comma:discardBind(exp()):try():option(Expression.Number(1)), -- 7
+            exp,                    -- 6
+            tokens.comma:discardBind(exp):try():option(Expression.Number(1)), -- 7
             tokens:reserved"do",    -- 8
-            block(),                -- 9
+            block,                  -- 9
             tokens:reserved"end"    -- 10
         }):try():fmap(function(list)
             return Stat.For(list[2], list[4], list[6], list[7], list[9])
@@ -301,11 +288,11 @@ do
     local function forInStat()
         return parsel.sequence({
             tokens:reserved"for",   -- 1
-            namelist1(),             -- 2
+            namelist1,              -- 2
             tokens:reserved"in",    -- 3
-            explist1(),              -- 4
+            explist1,               -- 4
             tokens:reserved"do",    -- 5
-            block(),                -- 6
+            block,                  -- 6
             tokens:reserved"end"    -- 7
         }):fmap(function(list)
             return Stat.ForIn(list[2], list[4], list[6])
@@ -314,20 +301,20 @@ do
 
     -- FunctionCall
     local function functionCallStat()
-        return functioncall()
+        return functioncall
     end
 
     -- Local
     local function localStat()
-        return tokens:reserved"local":discardBind(namelist1():bind(function(names)
-            return reservedOp"=":discardBind(explist1()):try():optionMaybe():fmap(Stat.Local(names))
+        return tokens:reserved"local":discardBind(namelist1:bind(function(names)
+            return tokens:reservedOp"=":discardBind(explist1):try():optionMaybe():fmap(Stat.Local(names))
         end)):try()
     end
 
     -- Function
     local function functionStat()
-        return tokens:reserved"function":discardBind(funcname():bind(function(name)
-            return funcbody():fmap(Stat.Function(name))
+        return tokens:reserved"function":discardBind(funcname:bind(function(name)
+            return funcbody:fmap(Stat.Function(name))
         end))
     end
 
@@ -337,7 +324,7 @@ do
             tokens:reserved"local",     -- 1
             tokens:reserved"function",  -- 2
             tokens.identifier,          -- 3
-            funcbody()                  -- 4
+            funcbody                    -- 4
         }):fmap(function(list)
             return Stat.LocalFunction(list[3], list[4])
         end)
@@ -367,7 +354,7 @@ end
 --------------------------------------------------
 
 function namelist()
-    return namelist1():otherwise(parsel.from({}))
+    return namelist1:otherwise(parsel.from({}))
 end
 
 function namelist1()
@@ -379,11 +366,11 @@ end
 --------------------------------------------------
 
 function varlist()
-    return varlist1():otherwise(parsel.from({}))
+    return varlist1:otherwise(parsel.from({}))
 end
 
 function varlist1()
-    return tokens:commaSep1(var()):try()
+    return tokens:commaSep1(var):try()
 end
 
 --------------------------------------------------
@@ -391,11 +378,11 @@ end
 --------------------------------------------------
 
 function explist()
-    return explist1():otherwise(parsel.from({}))
+    return explist1:otherwise(parsel.from({}))
 end
 
 function explist1()
-    return tokens:commaSep1(exp()):try()
+    return tokens:commaSep1(exp):try()
 end
 
 --------------------------------------------------
@@ -405,19 +392,19 @@ end
 do
     local function term()
         return parsel.choice({
-            prefixexp():try(),
+            prefixexp:try(),
             tokens:reserved"nil":fmap(Expression.Nil),
             tokens.integer:otherwise(tokens.float):fmap(Expression.Number),
-            stringExp(),
-            func(),
-            tableconstructor(),
+            stringExp,
+            func,
+            tableconstructor,
             tokens:symbol"...":discardBind(parsel.from(Expression.Dots)),
         })
     end
 
     local ops = {
         {
-            parsel.Operator.Infix(tokens:reservedOp"^":discardBind(parsel.from(BinOp.Pow)))
+            parsel.Operator.Infix(tokens:reservedOp"^":discardBind(parsel.from(BinOp.Pow)), parsel.Assoc.Right)
         },
         {
             parsel.Operator.Prefix(tokens:reserved"not":discardBind(parsel.from(UnaryOp.Not))),
@@ -471,16 +458,16 @@ end
 
 function prefixexp()
     return parsel.choice({
-        functioncall():try():fmap(PrefixExp.FunctionCall),
+        functioncall:try():fmap(PrefixExp.FunctionCall),
         tokens.identifier:fmap(PrefixExp.Name),
-        parensExpression():fmap(PrefixExp.Expression)
+        tokens:parens(exp):fmap(PrefixExp.Expression)
     }):bind(function(a)
-        return suffixexp():fmap(a)
+        return suffixexp:fmap(a)
     end)
 end
 
 function suffixexp()
-    return index():many()
+    return index:many()
 end
 
 --------------------------------------------------
@@ -488,7 +475,7 @@ end
 --------------------------------------------------
 
 function tableconstructor()
-    return tokens:braces(field():sepBy(fieldsep())):fmap(Expression.TableConstructor)
+    return tokens:braces(field:sepBy(fieldsep)):fmap(Expression.TableConstructor)
 end
 
 --------------------------------------------------
@@ -496,13 +483,13 @@ end
 --------------------------------------------------
 
 function field()
-    return tokens:brackets(exp()):bind(function(expression)
-        return tokens:reserved"=":discardBind(exp():fmap(Field.Indexed(expression)))
+    return tokens:brackets(exp):bind(function(expression)
+        return tokens:reserved"=":discardBind(exp:fmap(Field.Indexed(expression)))
     end)
     :otherwise(tokens.identifier:bind(function(name)
-        return tokens:reserved"=":discardBind(exp():fmap(Field.Named(name)))
+        return tokens:reserved"=":discardBind(exp:fmap(Field.Named(name)))
     end):try())
-    :otherwise(exp():fmap(Field.Expression))
+    :otherwise(exp:fmap(Field.Expression))
 end
 
 --------------------------------------------------
@@ -520,9 +507,9 @@ end
 function prefixcall()
     return parsel.choice({
         tokens.identifier:fmap(FunctionCall.Prefix.Name),
-        parensExpression():fmap(FunctionCall.Prefix.Expression)
+        tokens:parens(exp):fmap(FunctionCall.Prefix.Expression)
     }):bind(function(a)
-        return suffixexp():fmap(a)
+        return suffixexp:fmap(a)
     end)
 end
 
@@ -531,11 +518,11 @@ end
 --------------------------------------------------
 
 function functioncall()
-    return prefixcall():bind(function(pre)
-        return fargs():fmap(FunctionCall.Function(pre))
-                :otherwise(method():fmap(FunctionCall.Method(pre)))
+    return prefixcall:bind(function(pre)
+        return fargs:fmap(FunctionCall.Function(pre))
+                :otherwise(method:fmap(FunctionCall.Method(pre)))
                 :bind(function(f)
-                    return suffixcall():fmap(f)
+                    return suffixcall:fmap(f)
                 end)
     end)
 end
@@ -545,9 +532,9 @@ end
 --------------------------------------------------
 
 function suffixcall()
-    return suffixexp():bind(function(suf)
-        return fargs():fmap(FunctionCall.Suffix.Function(suf))
-                :otherwise(method():fmap(FunctionCall.Suffix.Method(suf)))
+    return suffixexp:bind(function(suf)
+        return fargs:fmap(FunctionCall.Suffix.Function(suf))
+                :otherwise(method:fmap(FunctionCall.Suffix.Method(suf)))
                 :many()
     end)
 end
@@ -558,7 +545,7 @@ end
 
 function method()
     return tokens.colon:discardBind(tokens.identifier:bind(function(name)
-        return fargs():fmap(Method.Method(name))
+        return fargs:fmap(Method.Method(name))
     end))
 end
 
@@ -568,7 +555,7 @@ end
 
 function index()
     return tokens.dot:discardBind(tokens.identifier:fmap(Index.Name))
-            :otherwise(tokens:brackets(exp()):fmap(Index.Expression))
+            :otherwise(tokens:brackets(exp):fmap(Index.Expression))
 end
 
 --------------------------------------------------
@@ -577,9 +564,9 @@ end
 
 function fargs()
     return parsel.choice({
-        tokens:parens(explist1()),
-        tableconstructor():bind(function(tbl) return parsel.from({tbl}) end),
-        stringExp():bind(function(str) return parsel.from({str}) end)
+        tokens:parens(explist1),
+        tableconstructor:bind(function(tbl) return parsel.from({tbl}) end),
+        stringExp:bind(function(str) return parsel.from({str}) end)
     })
 end
 
@@ -588,7 +575,7 @@ end
 --------------------------------------------------
 
 function func()
-    return tokens:reserved"function":discardBind(funcbody())
+    return tokens:reserved"function":discardBind(funcbody)
 end
 
 --------------------------------------------------
@@ -596,12 +583,10 @@ end
 --------------------------------------------------
 
 function funcbody()
-    return parsel.sequence({
-        tokens:parens(parlist()), -- 1
-        block(),                -- 2
-        tokens:reserved"end"    -- 3
-    }):fmap(function(list)
-        return FunctionBody.FunctionBody(list[1], list[2])
+    return tokens:parens(parlist):bind(function(parameters)
+        return block:bind(function(bl)
+            return tokens:reserved"end":discardBind(from(FunctionBody.FunctionBody(parameters, bl)))
+        end)
     end)
 end
 
@@ -622,7 +607,7 @@ end
 --------------------------------------------------
 
 function parlist()
-    return parlist1():otherwise(parsel.from({}))
+    return parlist1:otherwise(parsel.from({}))
 end
 
 function parlist1()
@@ -638,54 +623,42 @@ end
 --------------------------------------------------
 -- Thunking
 --------------------------------------------------
-local function thunk(f, name)
-    local run = false
-    local a
-    return function()
-        if not run then
-            print(parsel.getStack("Running thunk: " .. name, 1))
-            a = f()
-            run = true
-        end
-        return a
-    end
-end
 
-chunk = thunk(chunk, "chunk")
-block = thunk(block, "block")
-var = thunk(var, "var")
-stat = thunk(stat, "stat")
-namelist = thunk(namelist, "namelist")
-namelist1 = thunk(namelist1, "namelist1")
-varlist = thunk(varlist, "varlist")
-varlist1 = thunk(varlist1, "varlist1")
-explist = thunk(explist, "explist")
-explist1 = thunk(explist1, "explist1")
-exp = thunk(exp, "exp")
-stringExp = thunk(stringExp, "stringExp")
-prefixexp = thunk(prefixexp, "prefixexp")
-suffixexp = thunk(suffixexp, "suffixexp")
-tableconstructor = thunk(tableconstructor, "tableconstructor")
---fieldlist = thunk(fieldlist, "fieldlist")
-field = thunk(field, "field")
-fieldsep = thunk(fieldsep, "fieldsep")
-prefixcall = thunk(prefixcall, "prefixcall")
-functioncall = thunk(functioncall, "functioncall")
-suffixcall = thunk(suffixcall, "suffixcall")
-method = thunk(method, "method")
-index = thunk(index, "index")
-fargs = thunk(fargs, "fargs")
-func = thunk(func, "func")
-funcbody = thunk(funcbody, "funcbody")
-funcname = thunk(funcname, "funcname")
-parlist = thunk(parlist, "parlist")
-parlist1 = thunk(parlist1, "parlist1")
+chunk               = parsel.fromThunk(parsel.thunk(chunk, "chunk"))
+block               = parsel.fromThunk(parsel.thunk(block, "block"))
+var                 = parsel.fromThunk(parsel.thunk(var, "var"))
+stat                = parsel.fromThunk(parsel.thunk(stat, "stat"))
+namelist            = parsel.fromThunk(parsel.thunk(namelist, "namelist"))
+namelist1           = parsel.fromThunk(parsel.thunk(namelist1, "namelist1"))
+varlist             = parsel.fromThunk(parsel.thunk(varlist, "varlist"))
+varlist1            = parsel.fromThunk(parsel.thunk(varlist1, "varlist1"))
+explist             = parsel.fromThunk(parsel.thunk(explist, "explist"))
+explist1            = parsel.fromThunk(parsel.thunk(explist1, "explist1"))
+exp                 = parsel.fromThunk(parsel.thunk(exp, "exp"))
+stringExp           = parsel.fromThunk(parsel.thunk(stringExp, "stringExp"))
+prefixexp           = parsel.fromThunk(parsel.thunk(prefixexp, "prefixexp"))
+suffixexp           = parsel.fromThunk(parsel.thunk(suffixexp, "suffixexp"))
+tableconstructor    = parsel.fromThunk(parsel.thunk(tableconstructor, "tableconstructor"))
+--fieldlist           = parsel.fromThunk(parsel.thunk(fieldlist, "fieldlist"))
+field               = parsel.fromThunk(parsel.thunk(field, "field"))
+fieldsep            = parsel.fromThunk(parsel.thunk(fieldsep, "fieldsep"))
+prefixcall          = parsel.fromThunk(parsel.thunk(prefixcall, "prefixcall"))
+functioncall        = parsel.fromThunk(parsel.thunk(functioncall, "functioncall"))
+suffixcall          = parsel.fromThunk(parsel.thunk(suffixcall, "suffixcall"))
+method              = parsel.fromThunk(parsel.thunk(method, "method"))
+index               = parsel.fromThunk(parsel.thunk(index, "index"))
+fargs               = parsel.fromThunk(parsel.thunk(fargs, "fargs"))
+func                = parsel.fromThunk(parsel.thunk(func, "func"))
+funcbody            = parsel.fromThunk(parsel.thunk(funcbody, "funcbody"))
+funcname            = parsel.fromThunk(parsel.thunk(funcname, "funcname"))
+parlist             = parsel.fromThunk(parsel.thunk(parlist, "parlist"))
+parlist1            = parsel.fromThunk(parsel.thunk(parlist1, "parlist1"))
 
 --------------------------------------------------
 -- Lua
 --------------------------------------------------
 
-local Lua = chunk()
+local Lua = chunk
 
 --------------------------------------------------
 -- File
