@@ -179,7 +179,7 @@ local Parameter = {
 
 function chunk()
     return stat:bind(function(statement)
-        return tokens:symbol";":optionMaybe():discardBind(statement)
+        return tokens:symbol";":optionMaybe():discardBind(parsel.from(statement))
     end):many()
 end
 
