@@ -585,7 +585,7 @@ end
 function funcbody()
     return tokens:parens(parlist):bind(function(parameters)
         return block:bind(function(bl)
-            return tokens:reserved"end":discardBind(from(FunctionBody.FunctionBody(parameters, bl)))
+            return tokens:reserved"end":discardBind(parsel.from(FunctionBody.FunctionBody(parameters, bl)))
         end)
     end)
 end
