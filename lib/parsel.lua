@@ -142,7 +142,7 @@ end
 
 -- ERROR UTIL
 
-local function stackError(msg, level)
+function stackError(msg, level)
     if type(level) ~= "number" or level == 0 then
         level = 1
     end
@@ -167,7 +167,7 @@ local function stackError(msg, level)
     end
     error(table.concat(errors, "\n"), 0)
 end
-local function stackAssert(cond, msg, level)
+function stackAssert(cond, msg, level)
     if type(level) ~= "number" or level == 0 then
         level = 1
     end
@@ -205,10 +205,12 @@ function satisfy(f)
 end
 
 function char(c)
+    stackAssert(type(c) == "string" and #c == 1, "Expected character")
     return satisfy(function(c1) return c == c1 end):expect(c)
 end
 
 function string(s)
+    stackAssert(type(s) == "string", "Expected string")
     if s == "" then
         return from("")
     else
