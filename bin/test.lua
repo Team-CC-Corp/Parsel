@@ -440,7 +440,7 @@ do
     }
 
     function exp()
-        return term():buildExpressionParser(ops)
+        return term():expect"expression":buildExpressionParser(ops)
     end
 end
 
@@ -564,7 +564,7 @@ end
 
 function fargs()
     return parsel.choice({
-        tokens:parens(explist1),
+        tokens:parens(explist),
         tableconstructor:bind(function(tbl) return parsel.from({tbl}) end),
         stringExp:bind(function(str) return parsel.from({str}) end)
     })
