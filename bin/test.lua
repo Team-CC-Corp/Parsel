@@ -252,7 +252,7 @@ do
             tokens:reserved"else":discardBind(block):optionMaybe(), -- 6
             tokens:reserved"end"    -- 7
         }):fmap(function(list)
-            return Stati.If(list[2], list[4], list[5], list[6])
+            return Stat.If(list[2], list[4], list[5], list[6])
         end)
     end
 
