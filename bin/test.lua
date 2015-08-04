@@ -190,7 +190,7 @@ block = chunk
 --------------------------------------------------
 
 function var()
-    return tokens.identifier:bind(Var.Name)
+    return tokens.identifier:fmap(Var.Name)
     :otherwise(prefixexp:bind(function(prefix)
         return index:fmap(Var.IndexedPrefix(prefix))
     end))

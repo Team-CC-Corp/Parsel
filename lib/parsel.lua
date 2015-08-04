@@ -206,12 +206,12 @@ end
 Parser = {}
 
 function new(f)
-    local function f1(s)
-        local ok, a, cs, unexp = f(stackAssert(s, "Nil string"))
-        stackAssert(cs, "Nil suffix")
-        return ok, a, cs, unexp
-    end
-    return setmetatable({runParser=f1}, {__index=Parser})
+    -- local function f1(s)
+    --     local ok, a, cs, unexp = f(stackAssert(s, "Nil string"))
+    --     stackAssert(cs, "Nil suffix")
+    --     return ok, a, cs, unexp
+    -- end
+    return setmetatable({runParser=f}, {__index=Parser})
 end
 
 -- CHAR
