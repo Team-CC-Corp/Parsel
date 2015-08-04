@@ -38,6 +38,7 @@ local chunk,
     explist,
     explist1,
     exp,
+    longString
     stringExp,
     prefixexp,
     suffixexp,
@@ -448,8 +449,28 @@ end
 -- StringExp
 --------------------------------------------------
 
+function longString()
+    return tokens:lexeme(
+            parsel.char"="
+            :many()
+            :between(parsel.char"[", parsel.char"["):bind(function(equals)
+                equals = table.concat(equals)
+                return parsel.endOfLine
+                        :optionMaybe()
+                        :discardBind(
+                            parsel.anyChar
+                            :manyTill(
+                                parsel.string(equals):between(parsel.char"]", parsel.char"]")
+                            )
+                        )
+            end)
+        )
+end
+
 function stringExp()
-    return tokens:stringLiteral"\"":fmap(Expression.String)
+    return tokens:stringLiteral"\""
+            :otherwise(longString)
+            :fmap(Expression.String)
 end
 
 --------------------------------------------------
@@ -635,6 +656,7 @@ varlist1            = parsel.fromThunk(parsel.thunk(varlist1, "varlist1"))
 explist             = parsel.fromThunk(parsel.thunk(explist, "explist"))
 explist1            = parsel.fromThunk(parsel.thunk(explist1, "explist1"))
 exp                 = parsel.fromThunk(parsel.thunk(exp, "exp"))
+longString          = parsel.fromThunk(parsel.thunk(longString, "longString"))
 stringExp           = parsel.fromThunk(parsel.thunk(stringExp, "stringExp"))
 prefixexp           = parsel.fromThunk(parsel.thunk(prefixexp, "prefixexp"))
 suffixexp           = parsel.fromThunk(parsel.thunk(suffixexp, "suffixexp"))
