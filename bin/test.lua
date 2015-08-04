@@ -258,7 +258,7 @@ do
 
     -- Return
     local function returnStat()
-        return tokens:reserved"return":discardBind(explist1:try():optionMaybe()):fmap(Stat.Return)
+        return tokens:reserved"return":discardBind(explist):fmap(Stat.Return)
     end
 
     -- Break
