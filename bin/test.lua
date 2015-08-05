@@ -40,7 +40,7 @@ local comment = parsel.fromThunk(parsel.thunk(function()
         longStringStart:lookahead():try():discardBind(longString)
         :otherwise(parsel.anyChar:manyTill(parsel.endOfLine):fmap(function(chars) return table.concat(chars) end))
     )
-end))
+end, "comment"))
 
 local languageDef = {
     comment = comment,
