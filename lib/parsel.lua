@@ -428,7 +428,9 @@ end
 
 function Parser:apply(s)
     stackAssert(s, "Nil apply string")
-    return spaces:discardBind(self).runParser(s)
+    return spaces:discardBind(self):bind(function(a)
+        return eof:discardBind(from(a))
+    end).runParser(s)
 end
 
 function Parser:parse(s, sourceName)
@@ -443,10 +445,12 @@ function Parser:parse(s, sourceName)
         local _, linesConsumed = consumedInput:gsub("\n", "")
         local lineNumber = linesConsumed + 1
 
+        local near = cs:gsub("%s*(%S+)(.*)", "%1")
+        if near == "" then near = "End of input" end
         local errMsg = (unexp and "Unexpected: " or "Expected: ")
             .. table.concat(a, ", ")
             .. "\n  at: " .. sourceName .. ":" .. lineNumber
-            .. " near " .. cs:gsub("%s*(%S+)(.*)", "%1")
+            .. "\n  near: " .. near
 
         return false, errMsg
     else
