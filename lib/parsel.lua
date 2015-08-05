@@ -71,7 +71,7 @@ function thunk(f, name)
     local a
     return function()
         if not run then
-            -- print((parsel.getStack("Running thunk: " .. name, 1):gsub("\n.*", "")))
+            -- print((showStack("Running thunk: " .. name, 1):gsub("\n.*", "")))
             a = f()
             run = true
         end
@@ -159,6 +159,7 @@ function getStack(msg, level)
     if type(level) ~= "number" or level == 0 then
         level = 1
     end
+    level = level + 2
 
     local errors = {}
     local lastMsg
@@ -170,16 +171,26 @@ function getStack(msg, level)
             if #errors == 0 then
                 table.insert(errors, lastMsg)
             else
-                table.insert(errors, " at: " .. lastMsg:sub(1, -3 -#msg))
+                table.insert(errors, (lastMsg:sub(1, -3 -#msg):gsub("^pcall: ", "")))
             end
         end
     end
+
+    return errors
+end
+
+function showStack(msg, level)
+    if type(level) ~= "number" or level == 0 then
+        level = 1
+    end
+    local errors = getStack(msg, level + 1)
+
     if #errors >= 16 then
         errors[16] = "..."
         while table.remove(errors, 17) do end
     end
 
-    return table.concat(errors, "\n")
+    return table.concat(errors, "\n\tat: ")
 end
 
 function stackError(msg, level)
@@ -187,7 +198,7 @@ function stackError(msg, level)
         level = 1
     end
 
-    error(getStack(msg, level + 1), 0)
+    error(showStack(msg, level + 1), 0)
 end
 function stackAssert(cond, msg, level)
     if type(level) ~= "number" or level == 0 then
@@ -217,7 +228,7 @@ end
 -- CHAR
 
 function satisfy(f)
-    local stack = getStack("Failed satisfy", 1)
+    local stack = showStack("Failed satisfy", 1)
     return anyChar:bind(function(c)
         if f(c) then
             return from(c)
