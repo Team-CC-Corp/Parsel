@@ -38,7 +38,7 @@ local tokens
 local comment = parsel.fromThunk(parsel.thunk(function()
     return tokens:symbol"--":discardBind(
         longStringStart:lookahead():try():discardBind(longString)
-        :otherwise(parsel.anyChar:manyTill(parsel.endOfLine):fmap(function(chars) return table.concat(chars) end))
+        :otherwise(parsel.anyChar:manyTill(parsel.endOfLine):fmap(table.concat))
     )
 end, "comment"))
 
@@ -467,23 +467,21 @@ function longStringStart()
 end
 
 function longString()
-    return tokens:lexeme(
-            longStringStart:bind(function(equals)
-                return parsel.endOfLine
-                        :optionMaybe()
-                        :discardBind(
-                            parsel.anyChar
-                            :manyTill(
-                                parsel.string(("="):rep(equals)):between(parsel.char"]", parsel.char"]"):try()
-                            )
+    return longStringStart:bind(function(equals)
+            return parsel.endOfLine
+                    :optionMaybe()
+                    :discardBind(
+                        parsel.anyChar
+                        :manyTill(
+                            parsel.string(("="):rep(equals)):between(parsel.char"]", parsel.char"]"):try()
                         )
-            end)
-        )
+                    )
+        end)
 end
 
 function stringExp()
     return tokens:stringLiteral"\""
-            :otherwise(longString)
+            :otherwise(tokens:lexeme(longString))
             :fmap(Expression.String)
 end
 
