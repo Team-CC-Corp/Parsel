@@ -545,7 +545,23 @@ constants(function()
 end)
 
 function Parser:many()
-    return self:many1():otherwise(from({}))
+    return new(function(s)
+        local result = {}
+
+        while true do
+            local ok, a, cs, unexp = self.runParser(s)
+
+            if ok then
+                table.insert(result, a)
+            elseif s == cs then -- no input consumed. all good
+                return true, result, cs, unexp
+            else -- input consumed. report the error
+                return ok, a, cs, unexp
+            end
+
+            s = cs
+        end
+    end)
 end
 
 function Parser:skipMany()
