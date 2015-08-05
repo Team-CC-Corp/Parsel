@@ -243,17 +243,15 @@ function char(c)
     return satisfy(function(c1) return c == c1 end):expect(c)
 end
 
-function string(s)
-    stackAssert(type(s) == "string", "Expected string")
-    if s == "" then
-        return from("")
-    else
-        return char(s:sub(1,1))
-            :discardBind(string(s:sub(2))
-            :discardBind(from(s)))
-            :try()
-            :expect(s)
-    end
+function string(str)
+    stackAssert(type(str) == "string", "Expected string")
+    return new(function(s)
+        if s:find(str, 1, true) then
+            return true, str, s:sub(#str + 1), false
+        else
+            return false, {str}, s, false
+        end
+    end)
 end
 
 function oneOf(s)
