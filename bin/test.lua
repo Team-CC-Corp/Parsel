@@ -1,9 +1,49 @@
 local parsel = grin.getPackageAPI("Team-CC-Corp/Parsel", "parsel")
 
+-- Forward declaring parsers in order
+local chunk,
+    block,
+    var,
+    stat,
+    namelist,
+    namelist1,
+    varlist,
+    varlist1,
+    explist,
+    explist1,
+    exp,
+    longStringStart,
+    longString,
+    stringExp,
+    prefixexp,
+    suffixexp,
+    tableconstructor,
+    --fieldlist,
+    field,
+    fieldsep,
+    prefixcall,
+    functioncall,
+    suffixcall,
+    method,
+    index,
+    fargs,
+    func,
+    funcbody,
+    funcname,
+    parlist,
+    parlist1
+
+local tokens
+
+local comment = parsel.fromThunk(parsel.thunk(function()
+    return tokens:symbol"--":discardBind(
+        longStringStart:lookahead():try():discardBind(longString)
+        :otherwise(parsel.anyChar:manyTill(parsel.endOfLine):fmap(function(chars) return table.concat(chars) end))
+    )
+end))
+
 local languageDef = {
-    commentStart = nil, -- the library doesn't support Lua's multiline comments. They are an outlier
-    commentEnd = nil,
-    commentLine = "--",
+    comment = comment,
     nestedComments = nil,
     identStart = parsel.letter:otherwise(parsel.char"_"),
     identLetter = parsel.alphaNum:otherwise(parsel.char"_"),
@@ -24,39 +64,7 @@ local languageDef = {
     caseSensitive = true,
 }
 
-local tokens = parsel.makeTokenParser(languageDef)
-
--- Forward declaring parsers in order
-local chunk,
-    block,
-    var,
-    stat,
-    namelist,
-    namelist1,
-    varlist,
-    varlist1,
-    explist,
-    explist1,
-    exp,
-    longString
-    stringExp,
-    prefixexp,
-    suffixexp,
-    tableconstructor,
-    --fieldlist,
-    field,
-    fieldsep,
-    prefixcall,
-    functioncall,
-    suffixcall,
-    method,
-    index,
-    fargs,
-    func,
-    funcbody,
-    funcname,
-    parlist,
-    parlist1
+tokens = parsel.makeTokenParser(languageDef)
 
 --------------------------------------------------
 -- Data types
@@ -449,18 +457,24 @@ end
 -- StringExp
 --------------------------------------------------
 
+function longStringStart()
+    return parsel.char"="
+            :many()
+            :between(parsel.char"[", parsel.char"[")
+            :fmap(function(equals)
+                return #equals
+            end)
+end
+
 function longString()
     return tokens:lexeme(
-            parsel.char"="
-            :many()
-            :between(parsel.char"[", parsel.char"["):bind(function(equals)
-                equals = table.concat(equals)
+            longStringStart:bind(function(equals)
                 return parsel.endOfLine
                         :optionMaybe()
                         :discardBind(
                             parsel.anyChar
                             :manyTill(
-                                parsel.string(equals):between(parsel.char"]", parsel.char"]")
+                                parsel.string(("="):rep(equals)):between(parsel.char"]", parsel.char"]"):try()
                             )
                         )
             end)
@@ -656,6 +670,7 @@ varlist1            = parsel.fromThunk(parsel.thunk(varlist1, "varlist1"))
 explist             = parsel.fromThunk(parsel.thunk(explist, "explist"))
 explist1            = parsel.fromThunk(parsel.thunk(explist1, "explist1"))
 exp                 = parsel.fromThunk(parsel.thunk(exp, "exp"))
+longStringStart     = parsel.fromThunk(parsel.thunk(longStringStart, "longStringStart"))
 longString          = parsel.fromThunk(parsel.thunk(longString, "longString"))
 stringExp           = parsel.fromThunk(parsel.thunk(stringExp, "stringExp"))
 prefixexp           = parsel.fromThunk(parsel.thunk(prefixexp, "prefixexp"))
