@@ -247,7 +247,7 @@ end
 function string(str)
     stackAssert(type(str) == "string", "Expected string")
     return new(function(s)
-        if s:find(str, 1, true) then
+        if s:sub(1, #str):find(str, 1, true) then
             return true, str, s:sub(#str + 1), false
         else
             return false, {str}, s, false
