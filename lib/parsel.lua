@@ -190,7 +190,7 @@ function showStack(msg, level)
         while table.remove(errors, 17) do end
     end
 
-    return table.concat(errors, "\n\tat: ")
+    return table.concat(errors, "\n at: ")
 end
 
 function stackError(msg, level)
