@@ -1,5 +1,5 @@
 -- TABLE UTIL
-
+local fh = fs.open("parsel.log", "w")
 local function concat(a, b)
     if not b then
         -- Allow currying
@@ -217,13 +217,14 @@ end
 Parser = {}
 
 function new(f)
-    -- local stack = getStack("new", 2)
-    -- local function f1(...)
-    --     print(stack[1])
-    --     sleep(0)
-    --     return f(...)
-    -- end
-    return setmetatable({runParser=f}, {__index=Parser})
+    local stack = getStack("", 2)
+    local function f1(s)
+        local show = s:gsub("\n.*", "")
+        fh.writeLine(stack[1] .. "stack depth: " .. #getStack("",1) .. ": " .. show)
+        fh.flush()
+        return f(s)
+    end
+    return setmetatable({runParser=f1}, {__index=Parser})
 end
 
 -- CHAR
