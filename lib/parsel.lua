@@ -298,16 +298,21 @@ end)
 -- COMBINATOR
 
 function choice(list)
-    local p = list[1]
-    if not p then
+    if #list == 0 then
         return fail("No choices")
     end
 
-    for i=2, #list do
-        p = p:otherwise(list[i])
-    end
-
-    return p
+    local x = new(function(s)
+        local ok, a, cs, unexp
+        for i,p in ipairs(list) do
+            ok, a, cs, unexp = p.runParser(s)
+            if ok or s ~= cs then
+                return ok, a, cs, unexp
+            end
+        end
+        return ok, a, cs, unexp
+    end)
+    return x
 end
 
 function Parser:count(n)
