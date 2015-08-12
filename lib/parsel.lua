@@ -70,14 +70,14 @@ end
 
 function thunk(f, name)
     local run = false
-    local a
+    local ret
     return function()
         if not run then
             -- print((showStack("Running thunk: " .. name, 1):gsub("\n.*", "")))
-            a = f()
+            ret = {f()}
             run = true
         end
-        return a
+        return unpack(ret)
     end
 end
 
