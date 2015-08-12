@@ -1,5 +1,7 @@
+-- local fh = fs.open("parsel.log", "w")
+
 -- TABLE UTIL
-local fh = fs.open("parsel.log", "w")
+
 local function concat(a, b)
     if not b then
         -- Allow currying
