@@ -124,8 +124,8 @@ function cons(n)
                 cons = function()
                     return f
                 end,
-                get = function()
-                    return unpack(args)
+                get = function(n)
+                    return unpack(args, n)
                 end
             }
         else
