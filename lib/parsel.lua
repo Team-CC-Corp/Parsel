@@ -495,7 +495,7 @@ function Parser:bind(f)
     return new(function(s)
         local result = self.runParser(s)
         if result.cons() == Result.Success then
-            return f(a).runParser(result.get(2))
+            return f(result.get()).runParser(result.get(2))
         else
             return result
         end
