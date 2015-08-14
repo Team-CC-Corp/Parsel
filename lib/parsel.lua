@@ -1,6 +1,6 @@
 -- DEBUG UTIL
 
-local fh = fs.open("parsel.log", "w")
+-- local fh = fs.open("parsel.log", "w")
 local debugPrint = false
 local function debug(s)
     if fh then
