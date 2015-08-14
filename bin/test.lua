@@ -126,6 +126,13 @@ local BinOp = {
     Or = parsel.cons(2)
 }
 
+local _BinOp = {}
+for k,v in pairs(BinOp) do
+    _BinOp[k] = function(a, b)
+        return v(a)(b)
+    end
+end
+
 local UnaryOp = {
     Negate = parsel.cons(1),
     Length = parsel.cons(1),
@@ -154,8 +161,8 @@ local FunctionCall = {
     },
 
     Suffix = {
-        Function = parsel.cons(2), -- suffixexp, fargs, suffixcall
-        Method = parsel.cons(2) -- suffixexp, method, suffixcall
+        Function = parsel.cons(2), -- suffixexp, fargs
+        Method = parsel.cons(2) -- suffixexp, method
     }
 }
 
@@ -239,7 +246,7 @@ do
     local function repeatStat()
         return tokens:reserved"repeat":discardBind(block:bind(function(bl)
             return tokens:reserved"until":discardBind(exp:fmap(function(expression)
-                return Stat.Repeat(bl, expression)
+                return Stat.Repeat(bl)(expression)
             end))
         end))
     end
@@ -261,7 +268,7 @@ do
             tokens:reserved"else":discardBind(block):optionMaybe(), -- 6
             tokens:reserved"end"    -- 7
         }):fmap(function(list)
-            return Stat.If(list[2], list[4], list[5], list[6])
+            return Stat.If(list[2])(list[4])(list[5])(list[6])
         end)
     end
 
@@ -289,7 +296,7 @@ do
             block,                  -- 9
             tokens:reserved"end"    -- 10
         }):try():fmap(function(list)
-            return Stat.For(list[2], list[4], list[6], list[7], list[9])
+            return Stat.For(list[2])(list[4])(list[6])(list[7])(list[9])
         end)
     end
 
@@ -304,7 +311,7 @@ do
             block,                  -- 6
             tokens:reserved"end"    -- 7
         }):fmap(function(list)
-            return Stat.ForIn(list[2], list[4], list[6])
+            return Stat.ForIn(list[2])(list[4])(list[6])
         end)
     end
 
@@ -335,7 +342,7 @@ do
             tokens.identifier,          -- 3
             funcbody                    -- 4
         }):fmap(function(list)
-            return Stat.LocalFunction(list[3], list[4])
+            return Stat.LocalFunction(list[3])(list[4])
         end)
     end
 
@@ -413,7 +420,7 @@ do
 
     local ops = {
         {
-            parsel.Operator.Infix(tokens:reservedOp"^":discardBind(parsel.from(BinOp.Pow)), parsel.Assoc.Right)
+            parsel.Operator.Infix(tokens:reservedOp"^":discardBind(parsel.from(_BinOp.Pow)))(parsel.Assoc.Right)
         },
         {
             parsel.Operator.Prefix(tokens:reserved"not":discardBind(parsel.from(UnaryOp.Not))),
@@ -421,30 +428,30 @@ do
             parsel.Operator.Prefix(tokens:reservedOp"-":discardBind(parsel.from(UnaryOp.Negate))),
         },
         {
-            parsel.Operator.Infix(tokens:reservedOp"*":discardBind(parsel.from(BinOp.Multiply)), parsel.Assoc.Left),
-            parsel.Operator.Infix(tokens:reservedOp"/":discardBind(parsel.from(BinOp.Divide)), parsel.Assoc.Left),
-            parsel.Operator.Infix(tokens:reservedOp"%":discardBind(parsel.from(BinOp.Mod)), parsel.Assoc.Left)
+            parsel.Operator.Infix(tokens:reservedOp"*":discardBind(parsel.from(_BinOp.Multiply)))(parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp"/":discardBind(parsel.from(_BinOp.Divide)))(parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp"%":discardBind(parsel.from(_BinOp.Mod)))(parsel.Assoc.Left)
         },
         {
-            parsel.Operator.Infix(tokens:reservedOp"+":discardBind(parsel.from(BinOp.Plus)), parsel.Assoc.Left),
-            parsel.Operator.Infix(tokens:reservedOp"-":discardBind(parsel.from(BinOp.Minus)), parsel.Assoc.Left)
+            parsel.Operator.Infix(tokens:reservedOp"+":discardBind(parsel.from(_BinOp.Plus)))(parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp"-":discardBind(parsel.from(_BinOp.Minus)))(parsel.Assoc.Left)
         },
         {
-            parsel.Operator.Infix(tokens:reservedOp"..":discardBind(parsel.from(BinOp.Concat)), parsel.Assoc.Right)
+            parsel.Operator.Infix(tokens:reservedOp"..":discardBind(parsel.from(_BinOp.Concat)))(parsel.Assoc.Right)
         },
         {
-            parsel.Operator.Infix(tokens:reservedOp"<":discardBind(parsel.from(BinOp.LT)), parsel.Assoc.Left),
-            parsel.Operator.Infix(tokens:reservedOp">":discardBind(parsel.from(BinOp.GT)), parsel.Assoc.Left),
-            parsel.Operator.Infix(tokens:reservedOp"<=":discardBind(parsel.from(BinOp.LE)), parsel.Assoc.Left),
-            parsel.Operator.Infix(tokens:reservedOp">=":discardBind(parsel.from(BinOp.GE)), parsel.Assoc.Left),
-            parsel.Operator.Infix(tokens:reservedOp"~=":discardBind(parsel.from(BinOp.NotEquals)), parsel.Assoc.Left),
-            parsel.Operator.Infix(tokens:reservedOp"==":discardBind(parsel.from(BinOp.Equals)), parsel.Assoc.Left)
+            parsel.Operator.Infix(tokens:reservedOp"<":discardBind(parsel.from(_BinOp.LT)))(parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp">":discardBind(parsel.from(_BinOp.GT)))(parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp"<=":discardBind(parsel.from(_BinOp.LE)))(parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp">=":discardBind(parsel.from(_BinOp.GE)))(parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp"~=":discardBind(parsel.from(_BinOp.NotEquals)))(parsel.Assoc.Left),
+            parsel.Operator.Infix(tokens:reservedOp"==":discardBind(parsel.from(_BinOp.Equals)))(parsel.Assoc.Left)
         },
         {
-            parsel.Operator.Infix(tokens:reservedOp"and":discardBind(parsel.from(BinOp.And)), parsel.Assoc.Left)
+            parsel.Operator.Infix(tokens:reservedOp"and":discardBind(parsel.from(_BinOp.And)))(parsel.Assoc.Left)
         },
         {
-            parsel.Operator.Infix(tokens:reservedOp"or":discardBind(parsel.from(BinOp.Or)), parsel.Assoc.Left)
+            parsel.Operator.Infix(tokens:reservedOp"or":discardBind(parsel.from(_BinOp.Or)))(parsel.Assoc.Left)
         }
     }
 
@@ -618,7 +625,7 @@ end
 function funcbody()
     return tokens:parens(parlist):bind(function(parameters)
         return block:bind(function(bl)
-            return tokens:reserved"end":discardBind(parsel.from(FunctionBody.FunctionBody(parameters, bl)))
+            return tokens:reserved"end":discardBind(parsel.from(FunctionBody.FunctionBody(parameters)(bl)))
         end)
     end)
 end
