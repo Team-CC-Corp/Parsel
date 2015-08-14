@@ -137,7 +137,7 @@ function cons(n)
                     return f
                 end,
                 get = function(n)
-                    return unpack(args, n)
+                    return unpack(args, n or 1)
                 end
             }
         else
