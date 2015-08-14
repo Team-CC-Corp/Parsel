@@ -508,7 +508,7 @@ end
 --------------------------------------------------
 
 function tableconstructor()
-    return tokens:braces(field:sepBy(fieldsep)):fmap(Expression.TableConstructor)
+    return tokens:braces(field:sepEndBy(fieldsep)):fmap(Expression.TableConstructor)
 end
 
 --------------------------------------------------
@@ -517,11 +517,15 @@ end
 
 function field()
     return tokens:brackets(exp):bind(function(expression)
-        return tokens:reserved"=":discardBind(exp:fmap(Field.Indexed(expression)))
+        return tokens:symbol"=":discardBind(exp:fmap(Field.Indexed(expression)))
     end)
-    :otherwise(tokens.identifier:bind(function(name)
-        return tokens:symbol"=":discardBind(exp:fmap(Field.Named(name)))
-    end):try())
+    :otherwise(
+        tokens.identifier:bind(function(name)
+            return tokens:symbol"=":discardBind(parsel.from(name))
+        end):try():bind(function(name)
+            return exp:fmap(Field.Named(name))
+        end)
+    )
     :otherwise(exp:fmap(Field.Expression))
 end
 
