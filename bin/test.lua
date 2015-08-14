@@ -223,7 +223,7 @@ do
     local function assignmentStat()
         return varlist1:bind(function(vars)
             return tokens:reservedOp"=":discardBind(explist1:fmap(Stat.Assignment(vars)))
-        end):try()
+        end)
     end
 
     -- While
@@ -317,7 +317,7 @@ do
     local function localStat()
         return tokens:reserved"local":discardBind(namelist1:bind(function(names)
             return tokens:reservedOp"=":discardBind(explist1):try():optionMaybe():fmap(Stat.Local(names))
-        end)):try()
+        end))
     end
 
     -- Function
