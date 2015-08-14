@@ -1,4 +1,16 @@
--- local fh = fs.open("parsel.log", "w")
+-- DEBUG UTIL
+
+local fh = fs.open("parsel.log", "w")
+local debugPrint = false
+local function debug(s)
+    if fh then
+        fh.writeLine(s)
+        fh.flush()
+    end
+    if debugPrint then
+        print(s)
+    end
+end
 
 -- TABLE UTIL
 
@@ -231,8 +243,7 @@ function new(f)
     -- local _f = f
     -- f = function(s, cont)
     --     local show = s:gsub("\n.*", "")
-    --     fh.writeLine(stack[1] .. "stack depth: " .. #getStack("",1) .. ": " .. show)
-    --     fh.flush()
+    --     debug(stack[1] .. "stack depth: " .. #getStack("",1) .. ": " .. show)
     --     return _f(s, cont)
     -- end
     return setmetatable({runParser=f}, {__index=Parser})
