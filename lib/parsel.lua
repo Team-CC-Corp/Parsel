@@ -228,11 +228,12 @@ Parser = {}
 
 function new(f)
     -- local stack = getStack("", 2)
-    -- local function f1(s)
+    -- local _f = f
+    -- f = function(s, cont)
     --     local show = s:gsub("\n.*", "")
     --     fh.writeLine(stack[1] .. "stack depth: " .. #getStack("",1) .. ": " .. show)
     --     fh.flush()
-    --     return f(s)
+    --     return _f(s, cont)
     -- end
     return setmetatable({runParser=f}, {__index=Parser})
 end
@@ -257,11 +258,11 @@ end
 
 function string(str)
     stackAssert(type(str) == "string", "Expected string")
-    return new(function(s)
+    return new(function(s, cont)
         if s:sub(1, #str):find(str, 1, true) then
-            return Result.Success(str, s:sub(#str + 1))
+            return cont(Result.Success(str, s:sub(#str + 1)))
         else
-            return Result.Expected({str}, s)
+            return cont(Result.Expected({str}, s))
         end
     end)
 end
@@ -279,11 +280,11 @@ function noneOf(s)
 end
 
 constants(function()
-    anyChar = new(function(s)
+    anyChar = new(function(s, cont)
         if s == "" then
-            return Result.Unexpected("EOF", s)
+            return cont(Result.Unexpected("EOF", s))
         else
-            return Result.Success(s:sub(1,1), s:sub(2))
+            return cont(Result.Success(s:sub(1,1), s:sub(2)))
         end
     end)
     
@@ -309,20 +310,16 @@ end)
 -- COMBINATOR
 
 function choice(list)
-    if #list == 0 then
+    local p = list[1]
+    if not p then
         return fail("No choices")
     end
 
-    return new(function(s)
-        local result
-        for i,p in ipairs(list) do
-            result = p.runParser(s)
-            if result.cons() == Result.Success or result.get(2) ~= s then
-                return result
-            end
-        end
-        return result
-    end)
+    for i=2, #list do
+        p = p:otherwise(list[i])
+    end
+
+    return p
 end
 
 function Parser:count(n)
@@ -439,13 +436,14 @@ function Parser:manyTill(ending)
 end
 
 function Parser:lookahead()
-    return new(function(s)
-        local result = self.runParser(s)
-        if result.cons() ~= Result.Success then
-            return result
-        else
-            return Result.Success(result.get(), s)
-        end
+    return new(function(s, cont)
+        return self.runParser(s, function(result)
+            if result.cons() ~= Result.Success then
+                return cont(result)
+            else
+                return cont(Result.Success(result.get(), s))
+            end
+        end)
     end)
 end
 
@@ -455,7 +453,7 @@ function Parser:apply(s)
     stackAssert(s, "Nil apply string")
     return spaces:discardBind(self):bind(function(a)
         return eof:discardBind(from(a))
-    end).runParser(s)
+    end).runParser(s, id)
 end
 
 function Parser:parse(s, sourceName)
@@ -492,13 +490,14 @@ function Parser:parse(s, sourceName)
 end
 
 function Parser:bind(f)
-    return new(function(s)
-        local result = self.runParser(s)
-        if result.cons() == Result.Success then
-            return f(result.get()).runParser(result.get(2))
-        else
-            return result
-        end
+    return new(function(s, cont)
+        return self.runParser(s, function(result)
+            if result.cons() == Result.Success then
+                return f(result.get()).runParser(result.get(2), cont)
+            else
+                return cont(result)
+            end
+        end)
     end)
 end
 
@@ -517,90 +516,80 @@ function fail(str)
 end
 
 function unexpected(str)
-    return new(function(s)
-        return Result.Unexpected(str, s)
+    return new(function(s, cont)
+        return cont(Result.Unexpected(str, s))
     end)
 end
 
 function from(a)
-    return new(function(s) return Result.Success(a, s) end)
+    return new(function(s, cont)
+        return cont(Result.Success(a, s))
+    end)
 end
 
 -- Use to eliminate unfortunate recursive thunks, since Lua isn't lazy
 function fromThunk(f)
-    return new(function(s)
-        return f().runParser(s)
+    return new(function(s, cont)
+        return f().runParser(s, cont)
     end)
 end
 
 function Parser:expect(str)
-    return new(function(s)
-        local result = self.runParser(s)
-        if result.cons() ~= Result.Success then
-            return Result.Expected({str}, result.get(2))
-        else
-            return result
-        end
+    return new(function(s, cont)
+        return self.runParser(s, function(result)
+            if result.cons() ~= Result.Success then
+                return cont(Result.Expected({str}, result.get(2)))
+            else
+                return cont(result)
+            end
+        end)
     end)
 end
 
 function Parser:try()
-    return new(function(s)
-        local result = self.runParser(s)
-        if result.cons() ~= Result.Success then
-            return result.cons()(result.get(), s)
-        else
-            return result
-        end
+    return new(function(s, cont)
+        return self.runParser(s, function(result)
+            if result.cons() ~= Result.Success then
+                return cont(result.cons()(result.get(), s))
+            else
+                return cont(result)
+            end
+        end)
     end)
 end
 
 function Parser:otherwise(b)
-    return new(function(s)
-        local result = self.runParser(s)
-        -- return if ok, or error if input was consumed
-        if (result.cons() ~= Result.Success) and result.get(2) == s then
-            local bresult = b.runParser(s)
-            if bresult.cons() ~= Result.Success and bresult.get(2) == s then
-                if result.cons() == Result.Expected and bresult.cons() == Result.Expected then
-                    return Result.Expected(concat(result.get(), bresult.get()), s)
-                elseif result.cons() == Result.Expected then
-                    return result
-                else
-                    return bresult
-                end
+    return new(function(s, cont)
+        return self.runParser(s, function(result)
+            if (result.cons() ~= Result.Success) and result.get(2) == s then
+                return b.runParser(s, function(bresult)
+                    if bresult.cons() ~= Result.Success and bresult.get(2) == s then
+                        if result.cons() == Result.Expected and bresult.cons() == Result.Expected then
+                            return cont(Result.Expected(concat(result.get(), bresult.get()), s))
+                        elseif result.cons() == Result.Expected then
+                            return cont(result)
+                        else
+                            return cont(bresult)
+                        end
+                    else
+                        return cont(bresult)
+                    end
+                end)
             else
-                return bresult
+                return cont(result)
             end
-        else
-            return result
-        end
+        end)
     end)
 end
 
 constants(function()
-    zero = new(function(s) return Result.Unexpected("Error", s) end)
+    zero = new(function(s, cont)
+        return cont(Result.Unexpected("Error", s))
+    end)
 end)
 
 function Parser:many()
-    return new(function(s)
-        local list = {}
-
-        while true do
-            local result = self.runParser(s)
-            local cs = result.get(2)
-
-            if result.cons() == Result.Success then
-                table.insert(list, (result.get()))
-            elseif s == cs then -- no input consumed. all good
-                return Result.Success(list, cs)
-            else -- input consumed. report the error
-                return result
-            end
-
-            s = cs
-        end
-    end)
+    return self:many1():otherwise(from({}))
 end
 
 function Parser:skipMany()
