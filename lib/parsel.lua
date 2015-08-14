@@ -142,8 +142,10 @@ function cons(n)
             }
         else
             local args = {...}
-            return function(a)
-                return makeF(n - 1, unpack(concat(args, {a})))
+            return function(a, ...)
+                -- make sure nil a is allowed
+                local newArgs = {a, ...}
+                return makeF(n - (1 + #{...}), unpack(concat(args, newArgs)))
             end
         end
     end
@@ -270,9 +272,9 @@ function string(str)
     stackAssert(type(str) == "string", "Expected string")
     return new(function(s, cont)
         if s:sub(1, #str):find(str, 1, true) then
-            return cont(Result.Success(str)(s:sub(#str + 1)))
+            return cont(Result.Success(str, s:sub(#str + 1)))
         else
-            return cont(Result.Expected({str})(s))
+            return cont(Result.Expected({str}, s))
         end
     end)
 end
@@ -292,9 +294,9 @@ end
 constants(function()
     anyChar = new(function(s, cont)
         if s == "" then
-            return cont(Result.Unexpected("EOF")(s))
+            return cont(Result.Unexpected("EOF", s))
         else
-            return cont(Result.Success(s:sub(1,1))(s:sub(2)))
+            return cont(Result.Success(s:sub(1,1), s:sub(2)))
         end
     end)
     
@@ -451,7 +453,7 @@ function Parser:lookahead()
             if result.cons() ~= Result.Success then
                 return cont(result)
             else
-                return cont(Result.Success(result.get())(s))
+                return cont(Result.Success(result.get(), s))
             end
         end)
     end)
@@ -483,13 +485,11 @@ function Parser:parse(s, sourceName)
         local near = cs:gsub("%s*(%S+)(.*)", "%1")
         if near == "" then near = "End of input" end
 
-        local expected, a
+        local expected
         if result.cons() == Result.Expected then
             expected = "Expected: "
-            a = result.get()
         else
             expected = "Unexpected: "
-            a = {(result.get())}
         end
         local errMsg = expected .. table.concat(a, ", ")
             .. "\n  at: " .. sourceName .. ":" .. lineNumber
@@ -505,7 +505,7 @@ function Parser:bind(f)
     return new(function(s, cont)
         return self.runParser(s, function(result)
             if result.cons() == Result.Success then
-                return f((result.get())).runParser(result.get(2), cont)
+                return f(result.get()).runParser(result.get(2), cont)
             else
                 return cont(result)
             end
@@ -529,13 +529,13 @@ end
 
 function unexpected(str)
     return new(function(s, cont)
-        return cont(Result.Unexpected(str)(s))
+        return cont(Result.Unexpected(str, s))
     end)
 end
 
 function from(a)
     return new(function(s, cont)
-        return cont(Result.Success(a)(s))
+        return cont(Result.Success(a, s))
     end)
 end
 
@@ -550,7 +550,7 @@ function Parser:expect(str)
     return new(function(s, cont)
         return self.runParser(s, function(result)
             if result.cons() ~= Result.Success then
-                return cont(Result.Expected({str})(result.get(2)))
+                return cont(Result.Expected({str}, result.get(2)))
             else
                 return cont(result)
             end
@@ -562,7 +562,7 @@ function Parser:try()
     return new(function(s, cont)
         return self.runParser(s, function(result)
             if result.cons() ~= Result.Success then
-                return cont(result.cons()(result.get())(s))
+                return cont(result.cons()(result.get(), s))
             else
                 return cont(result)
             end
@@ -577,7 +577,7 @@ function Parser:otherwise(b)
                 return b.runParser(s, function(bresult)
                     if bresult.cons() ~= Result.Success and bresult.get(2) == s then
                         if result.cons() == Result.Expected and bresult.cons() == Result.Expected then
-                            return cont(Result.Expected(concat(result.get(), (bresult.get())))(s))
+                            return cont(Result.Expected(concat(result.get(), bresult.get()), s))
                         elseif result.cons() == Result.Expected then
                             return cont(result)
                         else
@@ -596,7 +596,7 @@ end
 
 constants(function()
     zero = new(function(s, cont)
-        return cont(Result.Unexpected("Error")(s))
+        return cont(Result.Unexpected("Error", s))
     end)
 end)
 
