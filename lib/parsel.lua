@@ -488,11 +488,13 @@ function Parser:parse(s, sourceName)
         local near = cs:gsub("%s*(%S+)(.*)", "%1")
         if near == "" then near = "End of input" end
 
-        local expected
+        local expected, a
         if result.cons() == Result.Expected then
             expected = "Expected: "
+            a = result.get()
         else
             expected = "Unexpected: "
+            a = {(result.get())}
         end
         local errMsg = expected .. table.concat(a, ", ")
             .. "\n  at: " .. sourceName .. ":" .. lineNumber
