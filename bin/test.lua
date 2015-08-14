@@ -403,6 +403,8 @@ do
         return parsel.choice({
             prefixexp:try(),
             tokens:reserved"nil":discardBind(parsel.from(Expression.Nil)),
+            tokens:reserved"true":discardBind(parsel.from(Expression.Boolean(true))),
+            tokens:reserved"false":discardBind(parsel.from(Expression.Boolean(false))),
             tokens.integer:otherwise(tokens.float):fmap(Expression.Number),
             stringExp,
             func,
