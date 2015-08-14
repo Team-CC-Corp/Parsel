@@ -142,10 +142,9 @@ function cons(n)
             }
         else
             local args = {...}
-            return function(a, ...)
-                -- make sure nil a is allowed
-                local newArgs = {a, ...}
-                return makeF(n - (1 + #{...}), unpack(concat(args, newArgs)))
+            return function(...)
+                local newArgs = {...}
+                return makeF(n - #newArgs, unpack(concat(args, newArgs)))
             end
         end
     end
