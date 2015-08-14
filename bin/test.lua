@@ -402,7 +402,7 @@ do
     local function term()
         return parsel.choice({
             prefixexp:try(),
-            tokens:reserved"nil":fmap(Expression.Nil),
+            tokens:reserved"nil":discardBind(parsel.from(Expression.Nil)),
             tokens.integer:otherwise(tokens.float):fmap(Expression.Number),
             stringExp,
             func,
