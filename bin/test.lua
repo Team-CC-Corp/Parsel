@@ -520,7 +520,7 @@ function field()
         return tokens:reserved"=":discardBind(exp:fmap(Field.Indexed(expression)))
     end)
     :otherwise(tokens.identifier:bind(function(name)
-        return tokens:reserved"=":discardBind(exp:fmap(Field.Named(name)))
+        return tokens:symbol"=":discardBind(exp:fmap(Field.Named(name)))
     end):try())
     :otherwise(exp:fmap(Field.Expression))
 end
