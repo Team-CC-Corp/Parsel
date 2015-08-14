@@ -129,25 +129,29 @@ To use it,
 ]]
 function cons(n)
     local f
-    local function makeF(n, ...)
+    local function makeF(n, tArgs)
         if n <= 0 then
-            local args = {...}
             return {
                 cons = function()
                     return f
                 end,
                 get = function(n)
-                    return unpack(args, n or 1)
+                    return tArgs[n]
+                end,
+                all = function()
+                    return tArgs
                 end
             }
         else
-            local args = {...}
             return function(a)
-                return makeF(n - 1, unpack(concat(args, {a})))
+                if a == nil and n == 1 then
+                    print(showStack(""..n, 1))
+                end
+                return makeF(n - 1, concat(tArgs, {a}))
             end
         end
     end
-    f = makeF(n or 0)
+    f = makeF(n or 0, {})
     return f
 end
 
@@ -451,7 +455,7 @@ function Parser:lookahead()
             if result.cons() ~= Result.Success then
                 return cont(result)
             else
-                return cont(Result.Success(result.get())(s))
+                return cont(Result.Success(result.get(1))(s))
             end
         end)
     end)
@@ -486,10 +490,10 @@ function Parser:parse(s, sourceName)
         local expected, a
         if result.cons() == Result.Expected then
             expected = "Expected: "
-            a = result.get()
+            a = result.get(1)
         else
             expected = "Unexpected: "
-            a = {(result.get())}
+            a = {result.get(1)}
         end
         local errMsg = expected .. table.concat(a, ", ")
             .. "\n  at: " .. sourceName .. ":" .. lineNumber
@@ -497,7 +501,7 @@ function Parser:parse(s, sourceName)
 
         return false, errMsg
     else
-        return true, (result.get())
+        return true, result.get(1)
     end
 end
 
@@ -505,7 +509,7 @@ function Parser:bind(f)
     return new(function(s, cont)
         return self.runParser(s, function(result)
             if result.cons() == Result.Success then
-                return f((result.get())).runParser(result.get(2), cont)
+                return f(result.get(1)).runParser(result.get(2), cont)
             else
                 return cont(result)
             end
@@ -562,7 +566,7 @@ function Parser:try()
     return new(function(s, cont)
         return self.runParser(s, function(result)
             if result.cons() ~= Result.Success then
-                return cont(result.cons()(result.get())(s))
+                return cont(result.cons()(result.get(1))(s))
             else
                 return cont(result)
             end
@@ -577,7 +581,7 @@ function Parser:otherwise(b)
                 return b.runParser(s, function(bresult)
                     if bresult.cons() ~= Result.Success and bresult.get(2) == s then
                         if result.cons() == Result.Expected and bresult.cons() == Result.Expected then
-                            return cont(Result.Expected(concat(result.get(), (bresult.get())))(s))
+                            return cont(Result.Expected(concat(result.get(1), bresult.get(1)))(s))
                         elseif result.cons() == Result.Expected then
                             return cont(result)
                         else
@@ -627,7 +631,7 @@ function Parser:buildExpressionParser(operators)
         local rassocOp, lassocOp, nassocOp, prefixOp, postfixOp = unpack(opTypesList)
 
         if op.cons() == Operator.Infix then
-            local parser, assoc = op.get()
+            local parser, assoc = unpack(op.all())
             if assoc == Assoc.None then
                 nassocOp = concat({parser}, nassocOp)
             elseif assoc == Assoc.Left then
@@ -636,9 +640,9 @@ function Parser:buildExpressionParser(operators)
                 rassocOp = concat({parser}, rassocOp)
             end
         elseif op.cons() == Operator.Prefix then
-            prefixOp = concat({op.get()}, prefixOp)
+            prefixOp = concat({op.get(1)}, prefixOp)
         elseif op.cons() == Operator.Postfix then
-            postfixOp = concat({op.get()}, postfixOp)
+            postfixOp = concat({op.get(1)}, postfixOp)
         end
 
         return {rassocOp, lassocOp, nassocOp, prefixOp, postfixOp}
