@@ -12,6 +12,10 @@ local function debug(s)
     end
 end
 
+-- NIL
+
+Nil = {}
+
 -- TABLE UTIL
 
 local function concat(a, b)
@@ -348,15 +352,15 @@ function Parser:option(a)
 end
 
 function Parser:optionMaybe()
-    return self:otherwise(from(nil))
+    return self:otherwise(from(Nil))
 end
 
 function Parser:optional()
-    return self:discardBind(from(nil)):otherwise(from(nil))
+    return self:discardBind(from(Nil)):otherwise(from(Nil))
 end
 
 function Parser:skipMany1()
-    return self:many1():discardBind(from(nil))
+    return self:many1():discardBind(from(Nil))
 end
 
 function Parser:many1()
@@ -433,7 +437,7 @@ function Parser:notFollowedBy()
     return self:bind(function(c)
         return unexpected(tostring(c))
     end)
-    :otherwise(from(nil))
+    :otherwise(from(Nil))
     :try()
 end
 
@@ -604,7 +608,7 @@ function Parser:many()
 end
 
 function Parser:skipMany()
-    return self:many():discardBind(from(nil))
+    return self:many():discardBind(from(Nil))
 end
 
 -- EXPRESSION
@@ -954,7 +958,7 @@ function makeTokenParser(languageDef)
 
         local function walk(s)
             if s == "" then
-                return from(nil)
+                return from(Nil)
             else
                 local c = s:sub(1,1)
                 return caseChar(c):expect(name):discardBind(walk(s:sub(2)))
