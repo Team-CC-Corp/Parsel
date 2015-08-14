@@ -316,13 +316,7 @@ do
     -- Local
     local function localStat()
         return tokens:reserved"local":discardBind(namelist1:bind(function(names)
-            return tokens:reservedOp"=":optionMaybe():bind(function(equals)
-                if equals == parsel.Nil then
-                    return parsel.from(parsel.Nil)
-                else
-                    return explist1
-                end
-            end):fmap(Stat.Local(names))
+            return tokens:reservedOp"=":discardBind(explist1):optionMaybe():fmap(Stat.Local(names))
         end))
     end
 
