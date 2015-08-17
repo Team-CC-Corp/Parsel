@@ -367,7 +367,7 @@ function namelist()
 end
 
 function namelist1()
-    return tokens:commaSep1(tokens.identifier):try()
+    return tokens:commaSep1(tokens.identifier)
 end
 
 --------------------------------------------------
@@ -379,7 +379,7 @@ function varlist()
 end
 
 function varlist1()
-    return tokens:commaSep1(var):try()
+    return tokens:commaSep1(var)
 end
 
 --------------------------------------------------
@@ -391,7 +391,7 @@ function explist()
 end
 
 function explist1()
-    return tokens:commaSep1(exp):try()
+    return tokens:commaSep1(exp)
 end
 
 --------------------------------------------------
@@ -401,7 +401,7 @@ end
 do
     local function term()
         return parsel.choice({
-            prefixexp:try(),
+            prefixexp,
             tokens:reserved"nil":discardBind(parsel.from(Expression.Nil)),
             tokens:reserved"true":discardBind(parsel.from(Expression.Boolean(true))),
             tokens:reserved"false":discardBind(parsel.from(Expression.Boolean(false))),
