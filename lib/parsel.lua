@@ -233,10 +233,27 @@ end
 -- RESULT TYPE
 
 Result = {
-    Unexpected = cons(2), -- String, cs
-    Expected = cons(2), -- {String}, cs
+    Fail = cons(2), -- [Message], csOfFail, cs
     Success = cons(2) -- a, cs
 }
+
+Message = {
+    Unexpected = cons(1), -- String
+    Expected = cons(1), -- String
+    Message = cons(1) -- String
+}
+
+function resultUnexpected(str, csOfFail, cs)
+    return Result.Fail({Message.Unexpected(str)}, csOfFail, cs)
+end
+
+function resultExpected(str, csOfFail, cs)
+    return Result.Fail({Message.Expected(str)}, csOfFail, cs)
+end
+
+function resultMessage(str, csOfFail, cs)
+    return Result.Fail({Message.Message(str)}, csOfFail, cs)
+end
 
 -- PARSER TYPE
 
@@ -276,7 +293,7 @@ function string(str)
         if s:sub(1, #str):find(str, 1, true) then
             return cont(Result.Success(str, s:sub(#str + 1)))
         else
-            return cont(Result.Expected({str}, s))
+            return cont(resultExpected(str, s, s))
         end
     end)
 end
@@ -296,7 +313,7 @@ end
 constants(function()
     anyChar = new(function(s, cont)
         if s == "" then
-            return cont(Result.Unexpected("EOF", s))
+            return cont(resultUnexpected("EOF", s, s))
         else
             return cont(Result.Success(s:sub(1,1), s:sub(2)))
         end
@@ -477,25 +494,28 @@ function Parser:parse(s, sourceName)
 
     local result = self:apply(s)
 
-    if result.cons() ~= Result.Success then
-        local cs = result.get(2)
+    if result.cons() == Result.Fail then
+        local errors, csOfFail, cs = result.get()
 
-        local consumedInput = s:sub(1, -(#cs + 1))
+        local consumedInput = s:sub(1, -(#csOfFail + 1))
         local _, linesConsumed = consumedInput:gsub("\n", "")
         local lineNumber = linesConsumed + 1
 
-        local near = cs:gsub("%s*(%S+)(.*)", "%1")
+        local near = csOfFail:gsub("%s*(%S+)(.*)", "%1")
         if near == "" then near = "End of input" end
 
-        local expected, a
-        if result.cons() == Result.Expected then
-            expected = "Expected: "
-            a = result.get()
-        else
-            expected = "Unexpected: "
-            a = {(result.get())}
+        local messages = {}
+        for i,e in ipairs(errors) do
+            if e.cons() == Message.Unexpected then
+                messages[i] = "Unexpected: " .. e.get()
+            elseif e.cons() == Message.Expected then
+                messages[i] = "Expected: " .. e.get()
+            else
+                messages[i] = e.get()
+            end
         end
-        local errMsg = expected .. table.concat(a, ", ")
+
+        local errMsg = table.concat(messages, "\n")
             .. "\n  at: " .. sourceName .. ":" .. lineNumber
             .. "\n  near: " .. near
 
@@ -528,12 +548,14 @@ function Parser:fmap(f)
 end
 
 function fail(str)
-    return zero:expect(str)
+    return new(function(s, cont)
+        return cont(resultMessage(str, s, s))
+    end)
 end
 
 function unexpected(str)
     return new(function(s, cont)
-        return cont(Result.Unexpected(str, s))
+        return cont(resultUnexpected(str, s, s))
     end)
 end
 
@@ -553,8 +575,15 @@ end
 function Parser:expect(str)
     return new(function(s, cont)
         return self.runParser(s, function(result)
-            if result.cons() ~= Result.Success then
-                return cont(Result.Expected({str}, result.get(2)))
+            if result.cons() == Result.Fail then
+                local messages = {}
+                for i,e in ipairs(result.get()) do
+                    if e.cons() ~= Message.Expected then
+                        table.insert(messages, e)
+                    end
+                end
+                table.insert(messages, Message.Expected(str))
+                return cont(Result.Fail(messages, result.get(2), result.get(3)))
             else
                 return cont(result)
             end
@@ -565,8 +594,8 @@ end
 function Parser:try()
     return new(function(s, cont)
         return self.runParser(s, function(result)
-            if result.cons() ~= Result.Success then
-                return cont(result.cons()(result.get(), s))
+            if result.cons() == Result.Fail then
+                return cont(Result.Fail(result.get(), s, s))
             else
                 return cont(result)
             end
@@ -577,16 +606,10 @@ end
 function Parser:otherwise(b)
     return new(function(s, cont)
         return self.runParser(s, function(result)
-            if (result.cons() ~= Result.Success) and result.get(2) == s then
+            if (result.cons() == Result.Fail) and result.get(3) == s then
                 return b.runParser(s, function(bresult)
-                    if bresult.cons() ~= Result.Success and bresult.get(2) == s then
-                        if result.cons() == Result.Expected and bresult.cons() == Result.Expected then
-                            return cont(Result.Expected(concat(result.get(), bresult.get()), s))
-                        elseif result.cons() == Result.Expected then
-                            return cont(result)
-                        else
-                            return cont(bresult)
-                        end
+                    if bresult.cons() == Result.Fail and bresult.get(3) == s then
+                        return cont(Result.Fail(concat(result.get(), (bresult.get())), s, s))
                     else
                         return cont(bresult)
                     end
@@ -600,7 +623,7 @@ end
 
 constants(function()
     zero = new(function(s, cont)
-        return cont(Result.Unexpected("Error", s))
+        return cont(resultMessage("Error", s, s))
     end)
 end)
 
