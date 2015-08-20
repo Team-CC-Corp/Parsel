@@ -315,9 +315,18 @@ do
 
     -- Local
     local function localStat()
-        return tokens:reserved"local":discardBind(namelist1:bind(function(names)
-            return tokens:reservedOp"=":discardBind(explist1):optionMaybe():fmap(Stat.Local(names))
-        end))
+        return tokens:reserved"local":discardBind(
+            namelist1:bind(function(names)
+                return tokens:reservedOp"=":discardBind(explist1):optionMaybe():fmap(Stat.Local(names))
+            end)
+            :otherwise(parsel.sequence({
+                tokens:reserved"function",  -- 1
+                tokens.identifier,          -- 2
+                funcbody                    -- 3
+            }):fmap(function(list)
+                return Stat.LocalFunction(list[2], list[3])
+            end))
+        )
     end
 
     -- Function
@@ -325,18 +334,6 @@ do
         return tokens:reserved"function":discardBind(funcname:bind(function(name)
             return funcbody:fmap(Stat.Function(name))
         end))
-    end
-
-    -- LocalFunction
-    local function localFunctionStat()
-        return parsel.sequence({
-            tokens:reserved"local",     -- 1
-            tokens:reserved"function",  -- 2
-            tokens.identifier,          -- 3
-            funcbody                    -- 4
-        }):fmap(function(list)
-            return Stat.LocalFunction(list[3], list[4])
-        end)
     end
 
     function stat()
@@ -352,8 +349,7 @@ do
             forInStat(),
             functionCallStat(),
             localStat(),
-            functionStat(),
-            localFunctionStat()
+            functionStat()
         })
     end
 end
