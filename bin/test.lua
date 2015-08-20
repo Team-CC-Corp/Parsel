@@ -472,7 +472,7 @@ function longString()
                         parsel.anyChar
                         :manyTill(
                             parsel.string(("="):rep(equals)):between(parsel.char"]", parsel.char"]"):try()
-                        )
+                        ):fmap(table.concat)
                     )
         end)
 end
