@@ -256,12 +256,11 @@ end
 -- CHAR
 
 function satisfy(f)
-    local stack = showStack("Failed satisfy", 1)
     return anyChar:bind(function(c)
         if f(c) then
             return from(c)
         else
-            return zero:expect(stack)
+            return unexpected(c)
         end
     end):try()
 end
