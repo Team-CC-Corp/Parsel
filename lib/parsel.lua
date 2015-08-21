@@ -322,6 +322,8 @@ constants(function()
     space = satisfy(function(c) return c:find"%s" ~= nil end)
     spaces = space:many()
 
+    eof = anyChar:notFollowedBy():expect"end of input"
+
     newLine = char"\n"
     crlf = string"\r\n"
     endOfLine = newLine:otherwise(crlf)
@@ -444,10 +446,6 @@ function Parser:chainr1(op)
     end
     return self:bind(rest)
 end
-
-constants(function()
-    eof = anyChar:notFollowedBy():expect"end of input"
-end)
 
 function Parser:notFollowedBy()
     return self:bind(function(c)
