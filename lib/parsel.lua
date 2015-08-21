@@ -80,7 +80,7 @@ end
 
 -- FUNCTION UTIL
 
-local function id(...)
+function id(...)
     return ...
 end
 
