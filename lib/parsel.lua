@@ -633,6 +633,14 @@ function Parser:skipMany()
     return self:many():discardBind(from(Nil))
 end
 
+function Parser:print(f)
+    f = f or tostring
+    return self:bind(function(a)
+        print(f(a))
+        return from(a)
+    end)
+end
+
 -- EXPRESSION
 
 Assoc = {
