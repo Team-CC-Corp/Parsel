@@ -326,7 +326,7 @@ constants(function()
 
     newLine = char"\n"
     crlf = string"\r\n"
-    endOfLine = newLine:otherwise(crlf)
+    endOfLine = newLine:otherwise(crlf):otherwise(eof)
 
     tab = char"\t"
 
