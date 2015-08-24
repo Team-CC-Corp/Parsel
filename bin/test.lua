@@ -33,10 +33,8 @@ local chunk,
     parlist,
     parlist1
 
-local tokens
-
 local comment = parsel.fromThunk(parsel.thunk(function()
-    return tokens:symbol"--":discardBind(
+    return parsel.string"--":discardBind(
         longStringStart:lookahead():try():discardBind(longString)
         :otherwise(parsel.anyChar:manyTill(parsel.endOfLine):fmap(table.concat))
     )
@@ -64,7 +62,7 @@ local languageDef = {
     caseSensitive = true,
 }
 
-tokens = parsel.makeTokenParser(languageDef)
+local tokens = parsel.makeTokenParser(languageDef)
 
 --------------------------------------------------
 -- Data types
