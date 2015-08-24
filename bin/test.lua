@@ -401,7 +401,7 @@ do
             tokens:reserved"nil":discardBind(parsel.from(Expression.Nil)),
             tokens:reserved"true":discardBind(parsel.from(Expression.Boolean(true))),
             tokens:reserved"false":discardBind(parsel.from(Expression.Boolean(false))),
-            tokens.integer:otherwise(tokens.float):fmap(Expression.Number),
+            tokens.float:try():otherwise(tokens.integer):fmap(Expression.Number),
             stringExp,
             func,
             tableconstructor,
