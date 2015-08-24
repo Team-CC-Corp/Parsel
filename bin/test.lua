@@ -223,7 +223,7 @@ do
     local function assignmentStat()
         return varlist1:bind(function(vars)
             return tokens:reservedOp"=":discardBind(explist1:fmap(Stat.Assignment(vars)))
-        end)
+        end):try()
     end
 
     -- While
