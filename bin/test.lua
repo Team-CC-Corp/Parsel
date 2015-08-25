@@ -1,3 +1,96 @@
+--[[ Lua Grammar - With left recursion removed
+----------------------------------------------
+
+languageDef = ...
+tokens = makeTokenParser
+
+Lua ::= chunk
+
+chunk ::= {stat [`;´]}
+
+block ::= chunk
+
+var ::= Name
+var ::= prefixexp index
+
+stat ::= do block end
+stat ::= varlist `=´ explist
+stat ::= while exp do block end
+stat ::= repeat block until exp
+stat ::= if exp then block {elseif exp then block} [else block] end
+stat ::= return [explist]
+stat ::= break
+stat ::= for Name `=´ exp `,´ exp [`,´ exp] do block end
+stat ::= for namelist in explist do block end
+stat ::= functioncall
+stat ::= local namelist [`=´ explist]
+stat ::= function funcname funcbody
+stat ::= local function Name funcbody
+
+namelist ::= Name {`,´ Name}
+
+varlist ::= var {`,´ var}
+
+explist ::= exp {`,´ exp}
+
+exp ::= prefixexp
+exp ::= nil | false | true
+exp ::= Number
+exp ::= String
+exp ::= function
+exp ::= tableconstructor
+exp ::= `...´
+exp ::= exp binop exp
+exp ::= unop exp
+
+-- Eliminate left recursion
+-- https://en.wikipedia.org/wiki/Left_recursion#Removing_left_recursion
+-- prefixexp ::= var | functioncall | `(´ exp `)´
+{
+prefixexp ::= functioncall suffixexp
+prefixexp ::= Name suffixexp
+prefixexp ::= `(´ exp `)´ suffixexp
+
+suffixexp ::= index suffixexp
+suffixexp ::= E
+}
+
+tableconstructor ::= `{´ [fieldlist] `}´
+fieldlist ::= field {fieldsep field} [fieldsep]
+field ::= `[´ exp `]´ `=´ exp | Name `=´ exp | exp
+fieldsep ::= `,´ | `;´
+
+-- Eliminate left recursion
+-- functioncall ::= prefixexp fargs | prefixexp `:´ Name fargs
+{
+prefixcall ::= Name suffixexp | `(´ exp `)´ suffixexp
+
+functioncall ::= prefixcall fargs suffixcall
+functioncall ::= prefixcall method suffixcall
+
+suffixcall ::= suffixexp fargs suffixcall
+suffixcall ::= suffixexp method suffixcall
+suffixcall ::= E
+
+method ::= `:´ Name fargs
+}
+
+index ::= `[´ exp `]´ | `.´ Name
+
+fargs ::= `(´ [explist] `)´
+fargs ::= tableconstructor
+fargs ::= String
+
+function ::= function funcbody
+funcbody ::= `(´ [parlist] `)´ block end
+funcname ::= Name {`.´ Name} [`:´ Name]
+
+parlist ::= namelist [`,´ `...´] | `...´
+]]
+
+
+
+
 local parsel = grin.getPackageAPI("Team-CC-Corp/Parsel", "parsel")
 
 -- Forward declaring parsers in order
