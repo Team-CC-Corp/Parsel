@@ -18,6 +18,10 @@ Nil = {}
 
 -- TABLE UTIL
 
+--[[ concat(table, table)
+
+Concatenate two tables
+]]
 function concat(a, b)
     if not b then
         -- Allow currying
@@ -39,6 +43,10 @@ function concat(a, b)
     return concatted
 end
 
+--[[ tail(table)
+
+Returns a copy of t without its first element
+]]
 function tail(t)
     local tl = {}
     for i=2,#t do
@@ -47,6 +55,10 @@ function tail(t)
     return tl
 end
 
+--[[ replicate(number, any)
+
+Returns a table of length n, populated with x
+]]
 function replicate(n, x)
     local t = {}
     for i=1, n do
@@ -55,6 +67,10 @@ function replicate(n, x)
     return t
 end
 
+--[[ foldl(function, any, table)
+
+See: Haskell's foldl function
+]]
 function foldl(f, accum, t)
     for i,v in ipairs(t) do
         accum = f(accum, v)
@@ -62,6 +78,10 @@ function foldl(f, accum, t)
     return accum
 end
 
+--[[ foldr(function, any, table)
+
+See: Haskell's foldr function
+]]
 function foldr(f, accum, t)
     for i=#t,1,-1 do
         accum = f(t[i], accum)
@@ -69,6 +89,10 @@ function foldr(f, accum, t)
     return accum
 end
 
+--[[ contains(table, any)
+
+Returns true if t contains x
+]]
 function contains(t, x)
     for k,v in pairs(t) do
         if v == x then
@@ -80,10 +104,19 @@ end
 
 -- FUNCTION UTIL
 
+--[[ id(...)
+
+Returns exactly what was passed.
+Used as the base continuation in the apply function.
+]]
 function id(...)
     return ...
 end
 
+--[[ thunk(f, name)
+
+Returns a function that memoizes f's result
+]]
 function thunk(f, name)
     local run = false
     local ret
@@ -230,13 +263,26 @@ function stackAssert(cond, msg, level)
     end
 end
 
--- RESULT TYPE
+--[[ Result type
+
+This type is returned by a parser.
+If a parser failed, it will return a Fail
+with a list of Messages, the index of failure
+and the index of unconsumed input.
+]]
 
 Result = {
-    Fail = cons(2), -- [Message], csOfFail, cs
+    Fail = cons(3), -- [Message], csOfFail, cs
     Success = cons(2) -- a, cs
 }
 
+--[[ Message type
+
+This type represents error messages.
+If an unexpected token is encountered, an Unexpected is returned.
+If something in particular was expected, an Expected is returned.
+If there is a general error message, a Message is returned.
+]]
 Message = {
     Unexpected = cons(1), -- String
     Expected = cons(1), -- String
@@ -259,6 +305,10 @@ end
 
 Parser = {}
 
+--[[ new((string, Result->Result) -> Result)
+
+Returns a new Parser instance with the string parser f.
+]]
 function new(f)
     -- local stack = getStack("", 2)
     -- local _f = f
@@ -272,6 +322,10 @@ end
 
 -- CHAR
 
+--[[ satisfy(char->boolean)
+
+Returns a parser that parses any character that makes f return true
+]]
 function satisfy(f)
     return anyChar:bind(function(c)
         if f(c) then
@@ -282,11 +336,19 @@ function satisfy(f)
     end):try()
 end
 
+--[[ char(char)
+
+Returns a parser that succeeds on the character c
+]]
 function char(c)
     stackAssert(type(c) == "string" and #c == 1, "Expected character")
     return satisfy(function(c1) return c == c1 end):expect(c)
 end
 
+--[[ string(string)
+
+Returns a parser that succeeds on the exact string str
+]]
 function string(str)
     stackAssert(type(str) == "string", "Expected string")
     return new(function(s, cont)
@@ -298,12 +360,20 @@ function string(str)
     end)
 end
 
+--[[ oneOf(string)
+
+Returns a parser that succeeds on any of the characters in s
+]]
 function oneOf(s)
     return satisfy(function(c)
         return s:find(c, 1, true) ~= nil
     end)
 end
 
+--[[ oneOf(string)
+
+Returns a parser that succeeds on none of the characters in s
+]]
 function noneOf(s)
     return satisfy(function(c)
         return s:find(c, 1, true) == nil
@@ -311,6 +381,7 @@ function noneOf(s)
 end
 
 constants(function()
+    -- Parses any character
     anyChar = new(function(s, cont)
         if s == "" then
             return cont(resultUnexpected("EOF", s, s))
@@ -319,13 +390,17 @@ constants(function()
         end
     end)
     
+    -- Parses any space character
     space = satisfy(function(c) return c:find"%s" ~= nil end)
+    -- Parses any number of space characters
     spaces = space:many()
 
+    -- Succeeds only at the end of input
     eof = anyChar:notFollowedBy():expect"end of input"
 
     newLine = char"\n"
     crlf = string"\r\n"
+    -- Parses the end of the line
     endOfLine = newLine:otherwise(crlf):otherwise(eof)
 
     tab = char"\t"
@@ -342,6 +417,11 @@ end)
 
 -- COMBINATOR
 
+--[[ choice([Parser])
+
+Returns a parser that tries each parser in the list
+until one succeeds
+]]
 function choice(list)
     local p = list[1]
     if not p then
@@ -355,72 +435,138 @@ function choice(list)
     return p
 end
 
+--[[ count(number)
+
+Returns a parser that parses self n times
+]]
 function Parser:count(n)
     return sequence(replicate(n, self))
 end
 
+--[[ between(Parser, Parser)
+
+Returns a parser that parsers start, self, then stop.
+]]
 function Parser:between(start, stop)
     return start:discardBind(self:bind(function(a)
         return stop:discardBind(from(a))
     end))
 end
 
+--[[ option(a)
+
+Returns a parser that attempts to parse self,
+otherwise returns from(a)
+]]
 function Parser:option(a)
     return self:otherwise(from(a))
 end
 
+
+--[[ optionMaybe()
+
+Same as self:option(Nil)
+]]
 function Parser:optionMaybe()
     return self:otherwise(from(Nil))
 end
 
+--[[ optional()
+
+Same as self:optionMaybe():discardBind(Nil)
+]]
 function Parser:optional()
     return self:discardBind(from(Nil)):otherwise(from(Nil))
 end
 
+--[[ skipMany1()
+
+Returns a parser that parses self one or more times
+then discards the results
+]]
 function Parser:skipMany1()
     return self:many1():discardBind(from(Nil))
 end
 
+--[[ many1()
+
+Returns a parser that parses self one or more times
+]]
 function Parser:many1()
     return self:bind(function(a)
         return self:many():fmap(concat({a}))
     end)
 end
 
+--[[ sepBy(Parser)
+
+Returns a parser that parses self delimited by sep zero or more times
+]]
 function Parser:sepBy(sep)
     return self:sepBy1(sep):otherwise(from({}))
 end
 
+--[[ sepBy1(Parser)
+
+Returns a parser that parses self delimited by sep one or more times
+]]
 function Parser:sepBy1(sep)
     return self:bind(function(a)
         return sep:discardBind(self):many():fmap(concat({a}))
     end)
 end
 
+--[[ endBy(Parser)
+
+Returns a parser that parses self delimited by sep and ending with sep zero or more times
+]]
 function Parser:endBy(sep)
     return self:endBy1(sep):otherwise(from({}))
 end
 
+--[[ endBy1(Parser)
+
+Returns a parser that parses self delimited by sep and ending with sep one or more times
+]]
 function Parser:endBy1(sep)
     return self:bind(function(a)
         return sep:discardBind(from(a))
     end):many1()
 end
 
+--[[ sepEndBy(Parser)
+
+Returns a parser that parses self delimited by sep and ending with an optional sep zero or more times
+]]
 function Parser:sepEndBy(sep)
     return self:sepEndBy1(sep):otherwise(from({}))
 end
 
+--[[ sepEndBy1(Parser)
+
+Returns a parser that parses self delimited by sep and ending with an optional sep one or more times
+]]
 function Parser:sepEndBy1(sep)
     return self:bind(function(a)
         return sep:discardBind(self:sepEndBy(sep)):fmap(concat({a})):otherwise(from({a}))
     end)
 end
 
+--[[ chainl(Parser, any)
+
+Parses zero or more occurrences of self, separated by op.
+Returns a value obtained by a left associative application
+of all functions returned by op to the values returned by self.
+If there are zero occurrences of self, the value x is returned.
+]]
 function Parser:chainl(op, x)
     return self:chainl1(op):otherwise(from(x))
 end
 
+--[[ chainl1(Parser)
+
+Same as chainl, except at least one occurecne of self is required.
+]]
 function Parser:chainl1(op)
     local function rest(a)
         return op:bind(function(f)
@@ -432,10 +578,21 @@ function Parser:chainl1(op)
     return self:bind(rest)
 end
 
+--[[ chainr(Parser, any)
+
+Parses zero or more occurrences of self, separated by op.
+Returns a value obtained by a right associative application
+of all functions returned by op to the values returned by self.
+If there are zero occurrences of self, the value x is returned.
+]]
 function Parser:chainr(op, x)
     return self:chainr1(op):otherwise(from(x))
 end
 
+--[[ chainl=r1(Parser)
+
+Same as chainr, except at least one occurecne of self is required.
+]]
 function Parser:chainr1(op)
     local function rest(a)
         return op:bind(function(f)
@@ -447,6 +604,10 @@ function Parser:chainr1(op)
     return self:bind(rest)
 end
 
+--[[ notFollowedBy()
+
+Fails if self succeeds, otherwise returns Nil
+]]
 function Parser:notFollowedBy()
     return self:bind(function(c)
         return unexpected(tostring(c))
@@ -455,6 +616,10 @@ function Parser:notFollowedBy()
     :try()
 end
 
+--[[ manyTill(Parser)
+
+Parses self many times until ending succeeds
+]]
 function Parser:manyTill(ending)
     local function scan()
         return ending:discardBind(from({})):otherwise(self:bind(function(a)
@@ -464,6 +629,10 @@ function Parser:manyTill(ending)
     return scan()
 end
 
+--[[ lookahead()
+
+Parses self. Ordinary failure behavior, but on success it rolls back the input
+]]
 function Parser:lookahead()
     return new(function(s, cont)
         return self.runParser(s, function(result)
@@ -478,6 +647,10 @@ end
 
 -- PRIMITIVE
 
+--[[ bind(any->Parser)
+
+Parses self. Passes the result to f, then parses the returned parser
+]]
 function Parser:bind(f)
     return new(function(s, cont)
         return self.runParser(s, function(result)
@@ -490,28 +663,48 @@ function Parser:bind(f)
     end)
 end
 
+--[[ discardBind(Parser)
+
+Parses self, then parses p
+]]
 function Parser:discardBind(p)
     return self:bind(function() return p end)
 end
 
+--[[ fmap(any->any)
+
+Parses self, but returns f(a) instead of a
+]]
 function Parser:fmap(f)
     return self:bind(function(a)
         return from(f(a))
     end)
 end
 
+--[[ fail(string)
+
+Fails with the message str
+]]
 function fail(str)
     return new(function(s, cont)
         return cont(resultMessage(str, s, s))
     end)
 end
 
+--[[ unexpected(string)
+
+Fails with an unexpected error message
+]]
 function unexpected(str)
     return new(function(s, cont)
         return cont(resultUnexpected(str, s, s))
     end)
 end
 
+--[[ from(any)
+
+Returns a parser that always succeeds, consumes no input, and returns a
+]]
 function from(a)
     return new(function(s, cont)
         return cont(Result.Success(a, s))
@@ -525,6 +718,10 @@ function fromThunk(f)
     end)
 end
 
+--[[ expect(string)
+
+Parses self, but replaces any Expected error messages with str
+]]
 function Parser:expect(str)
     return new(function(s, cont)
         return self.runParser(s, function(result)
@@ -544,6 +741,10 @@ function Parser:expect(str)
     end)
 end
 
+--[[ try()
+
+Parses self. If it fails, roll the input back
+]]
 function Parser:try()
     return new(function(s, cont)
         return self.runParser(s, function(result)
@@ -556,6 +757,10 @@ function Parser:try()
     end)
 end
 
+--[[ otherwise(Parser)
+
+Parses self. If it fails without consuming input, parses b
+]]
 function Parser:otherwise(b)
     return new(function(s, cont)
         return self.runParser(s, function(result)
@@ -580,18 +785,33 @@ constants(function()
     end)
 end)
 
+--[[ many()
+
+Parses self zero or more times
+]]
 function Parser:many()
     return self:many1():otherwise(from({}))
 end
 
+--[[ skipMany()
+
+Parses self zero or more times, discarding the results
+]]
 function Parser:skipMany()
     return self:many():discardBind(from(Nil))
 end
 
-function Parser:print(f)
-    f = f or tostring
+--[[ trace(any->void)
+
+Parses self, the passes the result to f.
+f defaults to print(tostring(a))
+]]
+function Parser:trace(f)
+    f = f or function(a)
+        print(tostring(a))
+    end
     return self:bind(function(a)
-        print(f(a))
+        f(a)
         return from(a)
     end)
 end
@@ -610,6 +830,13 @@ Operator = {
     Postfix = cons(1), -- parser
 }
 
+--[=[ buildExpressionParser([[Operator]])
+
+Creates an expression parser, where self is the terms.
+Operators is a list of lists of operators.
+Each top level list represents prescedence.
+The lists within each prescendenc level contain operators with the same prescedence.
+]=]
 function Parser:buildExpressionParser(operators)
     local function splitOp(op, opTypesList)
         local rassocOp, lassocOp, nassocOp, prefixOp, postfixOp = unpack(opTypesList)
@@ -716,8 +943,6 @@ end
 --[[
 LanguageDef {
     comment        :: Parser,
-
-    nestedComments :: Bool,
 
     identStart     :: Parser,
 
@@ -1062,6 +1287,10 @@ end
 
 -- OTHER
 
+--[[ sequence([Parser])
+
+Takes a list of parsers and returns a parser of a list
+]]
 function sequence(list)
     if #list == 0 then
         return from({})
