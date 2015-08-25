@@ -478,51 +478,6 @@ end
 
 -- PRIMITIVE
 
-function Parser:apply(s)
-    stackAssert(s, "Nil apply string")
-    return spaces:discardBind(self):bind(function(a)
-        return eof:discardBind(from(a))
-    end).runParser(s, id)
-end
-
-function Parser:parse(s, sourceName)
-    if type(sourceName) ~= "string" then
-        sourceName = "string"
-    end
-
-    local result = self:apply(s)
-
-    if result.cons() == Result.Fail then
-        local errors, csOfFail, cs = result.get()
-
-        local consumedInput = s:sub(1, -(#csOfFail + 1))
-        local _, linesConsumed = consumedInput:gsub("\n", "")
-        local lineNumber = linesConsumed + 1
-
-        local near = csOfFail:gsub("%s*(%S+)(.*)", "%1")
-        if near == "" then near = "End of input" end
-
-        local messages = {}
-        for i,e in ipairs(errors) do
-            if e.cons() == Message.Unexpected then
-                messages[i] = "Unexpected: " .. e.get()
-            elseif e.cons() == Message.Expected then
-                messages[i] = "Expected: " .. e.get()
-            else
-                messages[i] = e.get()
-            end
-        end
-
-        local errMsg = table.concat(messages, "\n")
-            .. "\n  at: " .. sourceName .. ":" .. lineNumber
-            .. "\n  near: " .. near
-
-        return false, errMsg
-    else
-        return true, (result.get())
-    end
-end
-
 function Parser:bind(f)
     return new(function(s, cont)
         return self.runParser(s, function(result)
@@ -1053,6 +1008,51 @@ function makeTokenParser(languageDef)
         local whiteSpace = satisfy(function(c) return c:find"%s" ~= nil end):skipMany1()
 
         tokenParser.whiteSpace = whiteSpace:otherwise(languageDef.comment):skipMany()
+    end
+
+    function tokenParser:apply(p, s)
+        stackAssert(s, "Nil apply string")
+        return self.whiteSpace:discardBind(p):bind(function(a)
+            return eof:discardBind(from(a))
+        end).runParser(s, id)
+    end
+
+    function tokenParser:parse(p, s, sourceName)
+        if type(sourceName) ~= "string" then
+            sourceName = "string"
+        end
+
+        local result = self:apply(p, s)
+
+        if result.cons() == Result.Fail then
+            local errors, csOfFail, cs = result.get()
+
+            local consumedInput = s:sub(1, -(#csOfFail + 1))
+            local _, linesConsumed = consumedInput:gsub("\n", "")
+            local lineNumber = linesConsumed + 1
+
+            local near = csOfFail:gsub("%s*(%S+)(.*)", "%1")
+            if near == "" then near = "End of input" end
+
+            local messages = {}
+            for i,e in ipairs(errors) do
+                if e.cons() == Message.Unexpected then
+                    messages[i] = "Unexpected: " .. e.get()
+                elseif e.cons() == Message.Expected then
+                    messages[i] = "Expected: " .. e.get()
+                else
+                    messages[i] = e.get()
+                end
+            end
+
+            local errMsg = table.concat(messages, "\n")
+                .. "\n  at: " .. sourceName .. ":" .. lineNumber
+                .. "\n  near: " .. near
+
+            return false, errMsg
+        else
+            return true, (result.get())
+        end
     end
 
     runConstants()

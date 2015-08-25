@@ -800,7 +800,7 @@ local fh = fs.open(path, "r")
 local s = fh.readAll()
 fh.close()
 
-local ok, val = Lua:parse(s, fs.getName(path))
+local ok, val = tokens:parse(Lua, s, fs.getName(path))
 
 if not ok then
     printError(val)
