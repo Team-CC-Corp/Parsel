@@ -18,7 +18,7 @@ Nil = {}
 
 -- TABLE UTIL
 
-local function concat(a, b)
+function concat(a, b)
     if not b then
         -- Allow currying
         return function(b)
@@ -39,7 +39,7 @@ local function concat(a, b)
     return concatted
 end
 
-local function tail(t)
+function tail(t)
     local tl = {}
     for i=2,#t do
         tl[i - 1] = t[i]
@@ -47,7 +47,7 @@ local function tail(t)
     return tl
 end
 
-local function replicate(n, x)
+function replicate(n, x)
     local t = {}
     for i=1, n do
         table.insert(t, x)
@@ -55,21 +55,21 @@ local function replicate(n, x)
     return t
 end
 
-local function foldl(f, accum, t)
+function foldl(f, accum, t)
     for i,v in ipairs(t) do
         accum = f(accum, v)
     end
     return accum
 end
 
-local function foldr(f, accum, t)
+function foldr(f, accum, t)
     for i=#t,1,-1 do
         accum = f(t[i], accum)
     end
     return accum
 end
 
-local function contains(t, x)
+function contains(t, x)
     for k,v in pairs(t) do
         if v == x then
             return true
