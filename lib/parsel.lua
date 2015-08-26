@@ -263,6 +263,22 @@ function stackAssert(cond, msg, level)
     end
 end
 
+-- Stream
+do
+    local streamMt = {
+        __eq = function(lhs, rhs)
+            return lhs.text == rhs.text and lhs.cursor == rhs.cursor
+        end
+    }
+    function offsetStream(s, offset)
+        return setmetatable({text=s.text, cursor=s.cursor+offset}, streamMt)
+    end
+
+    function newStream(str)
+        return setmetatable({text=str, cursor=1}, streamMt)
+    end
+end
+
 --[[ Result type
 
 This type is returned by a parser.
@@ -352,8 +368,8 @@ Returns a parser that succeeds on the exact string str
 function string(str)
     stackAssert(type(str) == "string", "Expected string")
     return new(function(s, cont)
-        if s:sub(1, #str):find(str, 1, true) then
-            return cont(Result.Success(str, s:sub(#str + 1)))
+        if s.text:sub(s.cursor, s.cursor + #str - 1) == str then
+            return cont(Result.Success(str, offsetStream(s, #str)))
         else
             return cont(resultExpected(str, s, s))
         end
@@ -383,10 +399,10 @@ end
 constants(function()
     -- Parses any character
     anyChar = new(function(s, cont)
-        if s == "" then
+        if s.cursor > #s.text then
             return cont(resultUnexpected("EOF", s, s))
         else
-            return cont(Result.Success(s:sub(1,1), s:sub(2)))
+            return cont(Result.Success(s.text:sub(s.cursor,s.cursor), offsetStream(s, 1)))
         end
     end)
     
@@ -1247,16 +1263,16 @@ function makeTokenParser(languageDef)
             sourceName = "string"
         end
 
-        local result = self:apply(p, s)
+        local result = self:apply(p, newStream(s))
 
         if result.cons() == Result.Fail then
             local errors, csOfFail, cs = result.get()
 
-            local consumedInput = s:sub(1, -(#csOfFail + 1))
+            local consumedInput = s:sub(1, csOfFail.cursor - 1)
             local _, linesConsumed = consumedInput:gsub("\n", "")
             local lineNumber = linesConsumed + 1
 
-            local near = csOfFail:gsub("%s*(%S+)(.*)", "%1")
+            local near = s:sub(csOfFail.cursor):gsub("%s*(%S+)(.*)", "%1")
             if near == "" then near = "End of input" end
 
             local messages = {}
